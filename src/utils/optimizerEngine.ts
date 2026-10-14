@@ -58,37 +58,30 @@ export function runOptimizationDiagnosis(
       });
     }
 
-    // 2. Check for High ACOS items -> Bid Decrease (DEFAULT UNCHECKED per user requirement)
+    // Determine Bid Action for this item (EVERY item gets an action so none are missing!)
+    const baseBid = item.currentBid > 0 ? item.currentBid : (item.cpc > 0 ? item.cpc : 0.75);
+
     if (item.orders > 0 && item.acos > config.targetAcos) {
-      const baseBid = item.currentBid > 0 ? item.currentBid : (item.cpc > 0 ? item.cpc : 0.75);
-      
-      // Amazon target bid formula: Target Bid = CPC * (Target ACOS / Current ACOS)
+      // 1. High ACOS -> Bid Decrease
       const idealBid = (item.cpc > 0 ? item.cpc : baseBid) * (config.targetAcos / item.acos);
-      
-      // Protection against drastic drop
       const maxDecreaseAllowed = baseBid * (config.maxBidDecreasePercent / 100);
       const floorBid = Math.max(baseBid - maxDecreaseAllowed, config.minBidFloor);
       const calculatedBid = Math.max(idealBid, floorBid, config.minBidFloor);
       const roundedBid = Number(calculatedBid.toFixed(2));
+      const diffPercent = Number((((roundedBid - baseBid) / baseBid) * 100).toFixed(1));
 
-      if (roundedBid < baseBid) {
-        const diffPercent = Number((((roundedBid - baseBid) / baseBid) * 100).toFixed(1));
-        bidActions.push({
-          id: `bid_dec_${item.id}_${item.originalRowIndex}`,
-          item,
-          type: 'decrease_bid',
-          currentBid: baseBid,
-          suggestedBid: roundedBid,
-          bidChangePercent: diffPercent,
-          reason: `当前 ACOS ${item.acos}% 超出目标 (${config.targetAcos}%)，系统保本参考价为 $${roundedBid}`,
-          selected: false // Default unchecked! Avoid accidental adjustments
-        });
-      }
-    }
-
-    // 3. Check for Low ACOS Winners with room to expand (DEFAULT UNCHECKED)
-    if (item.orders >= 2 && item.acos > 0 && item.acos <= config.targetAcos * 0.7) {
-      const baseBid = item.currentBid > 0 ? item.currentBid : (item.cpc > 0 ? item.cpc : 0.75);
+      bidActions.push({
+        id: `bid_dec_${item.id}_${item.originalRowIndex}`,
+        item,
+        type: 'decrease_bid',
+        currentBid: baseBid,
+        suggestedBid: roundedBid,
+        bidChangePercent: diffPercent,
+        reason: `当前 ACOS ${item.acos}% 超出目标 (${config.targetAcos}%)，建议降价控本`,
+        selected: false
+      });
+    } else if (item.orders >= 2 && item.acos > 0 && item.acos <= config.targetAcos * 0.7) {
+      // 2. High conversion winners -> Bid Boost
       const suggestedBid = Number(Math.min(baseBid * 1.15, baseBid + 0.35).toFixed(2));
       const diffPercent = Number((((suggestedBid - baseBid) / baseBid) * 100).toFixed(1));
 
@@ -100,13 +93,25 @@ export function runOptimizationDiagnosis(
         suggestedBid: suggestedBid,
         bidChangePercent: diffPercent,
         reason: `高转化优质词 (ACOS 仅 ${item.acos}%)，建议提价 15% 抢占首页顶部首位`,
-        selected: false // Default unchecked!
+        selected: false
       });
-    }
+    } else if (item.orders === 0 && item.clicks >= config.zeroOrderClickThreshold) {
+      // 3. Bleeding high click 0 conversion items -> Urgent Bid Decrease (or negative)
+      const suggestedBid = Math.max(Number((baseBid * 0.7).toFixed(2)), config.minBidFloor);
+      const diffPercent = Number((((suggestedBid - baseBid) / baseBid) * 100).toFixed(1));
 
-    // 4. Check for 0/Low Impression Keywords -> Boost Recommendation (DEFAULT UNCHECKED)
-    if (item.clicks === 0 && item.spend === 0 && item.impressions <= 25) {
-      const baseBid = item.currentBid > 0 ? item.currentBid : 0.50;
+      bidActions.push({
+        id: `bid_bleed_${item.id}_${item.originalRowIndex}`,
+        item,
+        type: 'decrease_bid',
+        currentBid: baseBid,
+        suggestedBid: suggestedBid,
+        bidChangePercent: diffPercent,
+        reason: `点击 ${item.clicks} 次 0 转化，白白烧掉 $${item.spend.toFixed(2)}，建议降价控本或直接否定止血`,
+        selected: false
+      });
+    } else if (item.clicks === 0 && item.spend === 0) {
+      // 4. 0 Click & 0 Spend items (Zero or low impression)
       let suggestedBid = baseBid;
       if (item.suggestedBidMed && item.suggestedBidMed > baseBid) {
         suggestedBid = item.suggestedBidMed;
@@ -123,9 +128,35 @@ export function runOptimizationDiagnosis(
         suggestedBid: suggestedBid,
         bidChangePercent: diffPercent,
         reason: item.impressions === 0 
-          ? '0曝光未激活：出价可能过低未获得展示机会，建议微提竞价或参考亚马逊建议中位价放量测试'
-          : `曝光极低 (${item.impressions}次展示)：出价偏低未能拿足展示量，建议小幅提价测试放量`,
-        selected: false // Default unchecked!
+          ? '0曝光未激活：出价可能过低未获展示机会，建议微提竞价或参考建议价激活测试'
+          : `曝光偏低 (${item.impressions}次展示 0点击)：建议小幅加价测试放量`,
+        selected: false
+      });
+    } else {
+      // 5. Moderate clicks with 0 orders, or normal healthy terms -> Observation & manual control
+      let reason = '数据观察期：当前出价维持，可根据出单转化情况手动微调';
+      let type: 'observation' | 'decrease_bid' = 'observation';
+      let suggestedBid = baseBid;
+
+      if (item.clicks > 0 && item.orders === 0) {
+        reason = `已产生 ${item.clicks} 次点击花费 $${item.spend.toFixed(2)} 尚未出单，建议观察或小幅降价控本`;
+        suggestedBid = Number(Math.max(baseBid * 0.85, config.minBidFloor).toFixed(2));
+        type = 'decrease_bid';
+      } else if (item.orders > 0 && item.acos <= config.targetAcos) {
+        reason = `ACOS ${item.acos}% 达标，投放健康，保持当前出价`;
+      }
+
+      const diffPercent = Number((((suggestedBid - baseBid) / baseBid) * 100).toFixed(1));
+
+      bidActions.push({
+        id: `bid_obs_${item.id}_${item.originalRowIndex}`,
+        item,
+        type: type,
+        currentBid: baseBid,
+        suggestedBid: suggestedBid,
+        bidChangePercent: diffPercent,
+        reason: reason,
+        selected: false
       });
     }
 

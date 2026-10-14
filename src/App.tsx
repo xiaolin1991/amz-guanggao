@@ -25,6 +25,7 @@ import { ConfigBar } from './components/ConfigBar';
 import { MetricsDashboard } from './components/MetricsDashboard';
 import { ActionTabs } from './components/ActionTabs';
 import { ExportBar } from './components/ExportBar';
+import { FloatingSupport } from './components/FloatingSupport';
 
 export const App: React.FC = () => {
   // Theme state: defaults to 'light' (pure white & soft clean slate), switchable to 'dark' for night
@@ -438,6 +439,9 @@ export const App: React.FC = () => {
         isOpen={isTutorialOpen}
         onClose={() => setIsTutorialOpen(false)}
       />
+
+      {/* Floating Online Customer Support & Back to Top */}
+      <FloatingSupport />
     </div>
   );
 };

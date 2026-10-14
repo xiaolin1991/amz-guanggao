@@ -63,7 +63,7 @@ export interface OptimizerConfig {
 export interface BidAdjustmentAction {
   id: string;
   item: NormalizedAdItem;
-  type: 'decrease_bid' | 'increase_bid' | 'zero_impression_boost' | 'pause';
+  type: 'decrease_bid' | 'increase_bid' | 'zero_impression_boost' | 'observation' | 'pause';
   currentBid: number;
   suggestedBid: number;
   bidChangePercent: number;

@@ -8,18 +8,17 @@ import {
   CheckSquare, 
   Square, 
   Search, 
-  ArrowDownRight,
-  ArrowUpRight,
-  ArrowUpDown,
-  Maximize2,
-  Minimize2,
-  Percent,
-  DollarSign,
-  Zap,
-  RotateCcw,
-  SlidersHorizontal,
-  Flame,
-  Check
+  Maximize2, 
+  Minimize2, 
+  Percent, 
+  DollarSign, 
+  Zap, 
+  RotateCcw, 
+  SlidersHorizontal, 
+  Copy, 
+  Check, 
+  Type, 
+  MoveHorizontal
 } from 'lucide-react';
 import { 
   BidAdjustmentAction, 
@@ -27,6 +26,59 @@ import {
   HarvestAction, 
   NormalizedAdItem 
 } from '../types/amazon';
+
+export interface ColumnVisibility {
+  matchType: boolean;
+  currentBid: boolean;
+  userCustomBid: boolean;
+  amazonSuggested: boolean;
+  impressions: boolean;
+  clicks: boolean;
+  ctr: boolean;
+  cpc: boolean;
+  spend: boolean;
+  orders: boolean;
+  sales: boolean;
+  acos: boolean;
+  roas: boolean;
+  reason: boolean;
+}
+
+export const DEFAULT_COL_VISIBILITY: ColumnVisibility = {
+  matchType: true,
+  currentBid: true,
+  userCustomBid: true,
+  amazonSuggested: true,
+  impressions: true,
+  clicks: true,
+  ctr: true,
+  cpc: true,
+  spend: true,
+  orders: true,
+  sales: true,
+  acos: true,
+  roas: true,
+  reason: true
+};
+
+export type TableDensity = 'compact' | 'normal' | 'spacious';
+export type TableFontSize = 'sm' | 'base' | 'lg';
+
+export type SortField = 
+  | 'spend' 
+  | 'clicks' 
+  | 'impressions' 
+  | 'orders' 
+  | 'sales' 
+  | 'acos' 
+  | 'roas' 
+  | 'currentBid' 
+  | 'userCustomBid'
+  | 'suggestedBidMed'
+  | 'ctr' 
+  | 'cpc'
+  | 'keywordText'
+  | 'matchType';
 
 interface ActionTabsProps {
   bidActions: BidAdjustmentAction[];
@@ -45,8 +97,6 @@ interface ActionTabsProps {
   isFullWidth: boolean;
   onToggleFullWidth: () => void;
 }
-
-type SortField = 'spend' | 'clicks' | 'impressions' | 'orders' | 'sales' | 'acos' | 'roas' | 'currentBid' | 'ctr' | 'cpc';
 
 export const ActionTabs: React.FC<ActionTabsProps> = ({
   bidActions,
@@ -71,12 +121,78 @@ export const ActionTabs: React.FC<ActionTabsProps> = ({
   const [sortAsc, setSortAsc] = useState<boolean>(false);
   const [filterOnlyActive, setFilterOnlyActive] = useState<boolean>(false);
 
-  // Sub-filter inside Bid tab: 'all' | 'decrease' | 'increase' | 'zero' | 'selected'
-  const [bidFilter, setBidFilter] = useState<'all' | 'decrease' | 'increase' | 'zero' | 'selected'>('all');
+  // Sub-filter inside Bid tab: all | decrease | increase | zero | observation | selected
+  const [bidFilter, setBidFilter] = useState<'all' | 'decrease' | 'increase' | 'zero' | 'observation' | 'selected'>('all');
 
   // Shift-click selection index trackers
   const [lastBidIndex, setLastBidIndex] = useState<number | null>(null);
   const [lastNegIndex, setLastNegIndex] = useState<number | null>(null);
+
+  // Keyword copy tooltip state
+  const [copiedKeyword, setCopiedKeyword] = useState<string | null>(null);
+
+  // Table Density & Font Size (User preferences saved in localStorage)
+  const [density, setDensity] = useState<TableDensity>(() => {
+    return (localStorage.getItem('amz_density') as TableDensity) || 'normal';
+  });
+  const [fontSize, setFontSize] = useState<TableFontSize>(() => {
+    return (localStorage.getItem('amz_font_size') as TableFontSize) || 'base';
+  });
+
+  const handleSetDensity = (d: TableDensity) => {
+    setDensity(d);
+    try { localStorage.setItem('amz_density', d); } catch (e) {}
+  };
+
+  const handleSetFontSize = (s: TableFontSize) => {
+    setFontSize(s);
+    try { localStorage.setItem('amz_font_size', s); } catch (e) {}
+  };
+
+  // Column Visibility state & dropdown menu open state
+  const [isColVisMenuOpen, setIsColVisMenuOpen] = useState(false);
+  const [colVis, setColVis] = useState<ColumnVisibility>(() => {
+    try {
+      const saved = localStorage.getItem('amz_col_visibility');
+      if (saved) return { ...DEFAULT_COL_VISIBILITY, ...JSON.parse(saved) };
+    } catch (e) {}
+    return DEFAULT_COL_VISIBILITY;
+  });
+
+  const toggleColumn = (col: keyof ColumnVisibility) => {
+    setColVis(prev => {
+      const next = { ...prev, [col]: !prev[col] };
+      try { localStorage.setItem('amz_col_visibility', JSON.stringify(next)); } catch (e) {}
+      return next;
+    });
+  };
+
+  const handleResetColVis = (showAll = true) => {
+    if (showAll) {
+      setColVis(DEFAULT_COL_VISIBILITY);
+      try { localStorage.setItem('amz_col_visibility', JSON.stringify(DEFAULT_COL_VISIBILITY)); } catch (e) {}
+    } else {
+      // Compact preset
+      const compact: ColumnVisibility = {
+        matchType: true,
+        currentBid: true,
+        userCustomBid: true,
+        amazonSuggested: true,
+        impressions: true,
+        clicks: true,
+        ctr: false,
+        cpc: false,
+        spend: true,
+        orders: true,
+        sales: false,
+        acos: true,
+        roas: false,
+        reason: true
+      };
+      setColVis(compact);
+      try { localStorage.setItem('amz_col_visibility', JSON.stringify(compact)); } catch (e) {}
+    }
+  };
 
   // Batch Bid Adjustment states - DEFAULT BASE IS 'current' (原出价/进价)
   const [batchMode, setBatchMode] = useState<'percent' | 'fixed'>('percent');
@@ -93,6 +209,12 @@ export const ActionTabs: React.FC<ActionTabsProps> = ({
     .filter(n => n.selected)
     .reduce((sum, item) => sum + item.wastedSpend, 0);
 
+  // Counts for Bid Sub-filters
+  const decreaseCount = useMemo(() => bidActions.filter(b => b.type === 'decrease_bid').length, [bidActions]);
+  const increaseCount = useMemo(() => bidActions.filter(b => b.type === 'increase_bid').length, [bidActions]);
+  const zeroImpressionCount = useMemo(() => bidActions.filter(b => b.type === 'zero_impression_boost').length, [bidActions]);
+  const observationCount = useMemo(() => bidActions.filter(b => b.type === 'observation').length, [bidActions]);
+
   // Filtered Bid Actions
   const filteredBidActions = useMemo(() => {
     return bidActions.filter(action => {
@@ -100,6 +222,7 @@ export const ActionTabs: React.FC<ActionTabsProps> = ({
       if (bidFilter === 'decrease' && action.type !== 'decrease_bid') return false;
       if (bidFilter === 'increase' && action.type !== 'increase_bid') return false;
       if (bidFilter === 'zero' && action.type !== 'zero_impression_boost') return false;
+      if (bidFilter === 'observation' && action.type !== 'observation') return false;
       if (bidFilter === 'selected' && !action.selected) return false;
 
       if (!searchTerm) return true;
@@ -112,10 +235,47 @@ export const ActionTabs: React.FC<ActionTabsProps> = ({
     });
   }, [bidActions, bidFilter, searchTerm]);
 
-  // Counts for Bid Sub-filters
-  const decreaseCount = useMemo(() => bidActions.filter(b => b.type === 'decrease_bid').length, [bidActions]);
-  const increaseCount = useMemo(() => bidActions.filter(b => b.type === 'increase_bid').length, [bidActions]);
-  const zeroImpressionCount = useMemo(() => bidActions.filter(b => b.type === 'zero_impression_boost').length, [bidActions]);
+  // Sorted Bid Actions for Tab 1
+  const sortedAndFilteredBidActions = useMemo(() => {
+    const list = [...filteredBidActions];
+    if (!sortField) return list;
+
+    list.sort((a, b) => {
+      let valA: any;
+      let valB: any;
+
+      if (sortField === 'keywordText') {
+        valA = a.item.keywordText.toLowerCase();
+        valB = b.item.keywordText.toLowerCase();
+        return sortAsc ? valA.localeCompare(valB) : valB.localeCompare(valA);
+      }
+      if (sortField === 'matchType') {
+        valA = a.item.matchTypeDisplay;
+        valB = b.item.matchTypeDisplay;
+        return sortAsc ? valA.localeCompare(valB) : valB.localeCompare(valA);
+      }
+      if (sortField === 'currentBid') {
+        valA = a.currentBid;
+        valB = b.currentBid;
+      } else if (sortField === 'userCustomBid') {
+        valA = a.userCustomBid !== undefined ? a.userCustomBid : a.currentBid;
+        valB = b.userCustomBid !== undefined ? b.userCustomBid : b.currentBid;
+      } else if (sortField === 'suggestedBidMed') {
+        valA = a.item.suggestedBidMed || 0;
+        valB = b.item.suggestedBidMed || 0;
+      } else {
+        valA = (a.item as any)[sortField] ?? 0;
+        valB = (b.item as any)[sortField] ?? 0;
+      }
+
+      if (typeof valA === 'string') valA = parseFloat(valA) || 0;
+      if (typeof valB === 'string') valB = parseFloat(valB) || 0;
+
+      return sortAsc ? valA - valB : valB - valA;
+    });
+
+    return list;
+  }, [filteredBidActions, sortField, sortAsc]);
 
   // Sorting and filtering for Tab 4 (All Items)
   const sortedAndFilteredAllItems = useMemo(() => {
@@ -132,8 +292,8 @@ export const ActionTabs: React.FC<ActionTabsProps> = ({
     });
 
     result.sort((a, b) => {
-      let valA = a[sortField] || 0;
-      let valB = b[sortField] || 0;
+      let valA = (a as any)[sortField] || 0;
+      let valB = (b as any)[sortField] || 0;
       if (typeof valA === 'string') valA = parseFloat(valA) || 0;
       if (typeof valB === 'string') valB = parseFloat(valB) || 0;
 
@@ -148,7 +308,7 @@ export const ActionTabs: React.FC<ActionTabsProps> = ({
       setSortAsc(!sortAsc);
     } else {
       setSortField(field);
-      setSortAsc(false); // default descending for metrics
+      setSortAsc(false); // default descending for numbers
     }
   };
 
@@ -157,7 +317,7 @@ export const ActionTabs: React.FC<ActionTabsProps> = ({
     if (event.shiftKey && lastBidIndex !== null) {
       const start = Math.min(lastBidIndex, index);
       const end = Math.max(lastBidIndex, index);
-      const rangeIds = filteredBidActions.slice(start, end + 1).map(b => b.id);
+      const rangeIds = sortedAndFilteredBidActions.slice(start, end + 1).map(b => b.id);
       onToggleBidAction(actionId, rangeIds);
     } else {
       onToggleBidAction(actionId);
@@ -178,11 +338,24 @@ export const ActionTabs: React.FC<ActionTabsProps> = ({
     setLastNegIndex(index);
   };
 
+  // Copy keyword to clipboard with visual feedback
+  const handleCopyKeyword = (text: string) => {
+    try {
+      navigator.clipboard.writeText(text);
+      setCopiedKeyword(text);
+      setTimeout(() => {
+        setCopiedKeyword(null);
+      }, 1800);
+    } catch (e) {
+      console.error('Failed to copy text', e);
+    }
+  };
+
   // Execute Batch Bid Adjustment based on chosen base price (default is currentBid 原出价)
   const handleApplyBatchBid = () => {
     const selectedBids = bidActions.filter(b => b.selected);
     if (selectedBids.length === 0) {
-      alert('请先勾选需要调整出价的关键词！支持按住 Shift 键批量连选，或点击“全选”。');
+      alert('请先勾选需要调整出价的关键词！支持在表头一键全选，或按住 Shift 键连续连选。');
       return;
     }
 
@@ -212,21 +385,49 @@ export const ActionTabs: React.FC<ActionTabsProps> = ({
     onBatchApplyBids(updates);
   };
 
-  // Helper for inline quick bid adjustments
-  const handleInlineDelta = (action: BidAdjustmentAction, deltaType: 'pct' | 'amt', value: number) => {
-    const curEffective = action.userCustomBid !== undefined ? action.userCustomBid : action.currentBid;
-    let nextPrice = curEffective;
-    if (deltaType === 'pct') {
-      nextPrice = curEffective * (1 + value / 100);
-    } else {
-      nextPrice = curEffective + value;
-    }
-    nextPrice = Math.max(0.05, Number(nextPrice.toFixed(2)));
-    onCustomBidChange(action.id, nextPrice);
-    if (!action.selected) {
-      onToggleBidAction(action.id);
-    }
+  // Padding based on density setting
+  const cellPadding = useMemo(() => {
+    if (density === 'compact') return 'px-2 py-1.5';
+    if (density === 'spacious') return 'px-5 py-3.5';
+    return 'px-3.5 py-2.5';
+  }, [density]);
+
+  // Font size class based on fontSize setting
+  const fontSizeClass = useMemo(() => {
+    if (fontSize === 'sm') return 'text-[11px]';
+    if (fontSize === 'lg') return 'text-sm';
+    return 'text-xs';
+  }, [fontSize]);
+
+  // Helper for sorting header in table
+  const renderSortHeader = (label: string, field: SortField, className = '') => {
+    const isActive = sortField === field;
+    return (
+      <th 
+        onClick={() => handleSort(field)}
+        className={`${cellPadding} cursor-pointer hover:bg-slate-200/80 dark:hover:bg-slate-800 transition select-none ${className} ${
+          isActive ? 'text-amber-600 dark:text-amber-400 font-bold bg-amber-50/50 dark:bg-amber-950/20' : ''
+        }`}
+        title={`点击按 ${label} ${isActive ? (sortAsc ? '降序排列' : '升序排列') : '大小排序'}`}
+      >
+        <div className="flex items-center gap-1">
+          <span>{label}</span>
+          <span className="text-[10px]">
+            {isActive ? (
+              sortAsc ? '↑' : '↓'
+            ) : (
+              <span className="opacity-40 hover:opacity-100 text-slate-400">⇅</span>
+            )}
+          </span>
+        </div>
+      </th>
+    );
   };
+
+  // Header Select All state for Bid Actions
+  const allFilteredSelected = sortedAndFilteredBidActions.length > 0 && 
+    sortedAndFilteredBidActions.every(b => b.selected);
+  const someFilteredSelected = sortedAndFilteredBidActions.some(b => b.selected);
 
   return (
     <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm overflow-hidden flex flex-col transition-colors">
@@ -296,11 +497,80 @@ export const ActionTabs: React.FC<ActionTabsProps> = ({
           </button>
         </div>
 
-        {/* Width Expander Button */}
-        <div className="pb-2 flex items-center gap-2">
+        {/* Global Controls: Density, Font Size & Width Expander */}
+        <div className="pb-2 flex flex-wrap items-center gap-2.5">
+          {/* Font Size Selector (大中小) */}
+          <div className="flex items-center gap-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-0.5 text-xs shadow-sm">
+            <span className="text-[11px] text-slate-400 px-1.5 font-medium flex items-center gap-0.5">
+              <Type className="w-3 h-3" /> 字号:
+            </span>
+            <button
+              onClick={() => handleSetFontSize('sm')}
+              className={`px-2 py-0.5 rounded text-[11px] font-bold transition ${
+                fontSize === 'sm' ? 'bg-amber-500 text-slate-950 shadow-sm' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
+              }`}
+              title="小号字体：紧凑排版，全景展示无横滚"
+            >
+              小
+            </button>
+            <button
+              onClick={() => handleSetFontSize('base')}
+              className={`px-2 py-0.5 rounded text-[11px] font-bold transition ${
+                fontSize === 'base' ? 'bg-amber-500 text-slate-950 shadow-sm' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
+              }`}
+              title="中号字体：标准阅读"
+            >
+              中
+            </button>
+            <button
+              onClick={() => handleSetFontSize('lg')}
+              className={`px-2 py-0.5 rounded text-[11px] font-bold transition ${
+                fontSize === 'lg' ? 'bg-amber-500 text-slate-950 shadow-sm' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
+              }`}
+              title="大号字体：清晰护眼，支持报表左右平滑滑动"
+            >
+              大
+            </button>
+          </div>
+
+          {/* Table Density / Spacing Selector (项目间距自由调整) */}
+          <div className="flex items-center gap-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-0.5 text-xs shadow-sm">
+            <span className="text-[11px] text-slate-400 px-1.5 font-medium flex items-center gap-0.5">
+              <MoveHorizontal className="w-3 h-3" /> 间距:
+            </span>
+            <button
+              onClick={() => handleSetDensity('compact')}
+              className={`px-2 py-0.5 rounded text-[11px] font-bold transition ${
+                density === 'compact' ? 'bg-amber-500 text-slate-950 shadow-sm' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
+              }`}
+              title="紧凑间距：每列间距最小，显示更多数据"
+            >
+              紧凑
+            </button>
+            <button
+              onClick={() => handleSetDensity('normal')}
+              className={`px-2 py-0.5 rounded text-[11px] font-bold transition ${
+                density === 'normal' ? 'bg-amber-500 text-slate-950 shadow-sm' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
+              }`}
+              title="适中间距：标准留白"
+            >
+              适中
+            </button>
+            <button
+              onClick={() => handleSetDensity('spacious')}
+              className={`px-2 py-0.5 rounded text-[11px] font-bold transition ${
+                density === 'spacious' ? 'bg-amber-500 text-slate-950 shadow-sm' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
+              }`}
+              title="宽敞间距：大留白，阅读舒适"
+            >
+              宽松
+            </button>
+          </div>
+
+          {/* Width Expander Button */}
           <button
             onClick={onToggleFullWidth}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-slate-600 dark:text-slate-300 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700 transition"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-slate-600 dark:text-slate-300 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700 transition shadow-sm"
             title={isFullWidth ? '收起为标准宽度' : '拉宽显示全部报告内容'}
           >
             {isFullWidth ? (
@@ -368,6 +638,18 @@ export const ActionTabs: React.FC<ActionTabsProps> = ({
                   <Sparkles className="w-3.5 h-3.5" /> 优质放量提价 ({increaseCount})
                 </button>
               )}
+              {observationCount > 0 && (
+                <button
+                  onClick={() => setBidFilter('observation')}
+                  className={`px-3 py-1 rounded-lg transition font-medium flex items-center gap-1 ${
+                    bidFilter === 'observation'
+                      ? 'bg-slate-700 text-white font-bold shadow-sm'
+                      : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700'
+                  }`}
+                >
+                  <span>👀 流量观察项 ({observationCount})</span>
+                </button>
+              )}
               <button
                 onClick={() => setBidFilter('selected')}
                 className={`px-3 py-1 rounded-lg transition font-medium flex items-center gap-1 ${
@@ -406,13 +688,13 @@ export const ActionTabs: React.FC<ActionTabsProps> = ({
                 </div>
               </div>
 
-              {/* Selection helper buttons */}
+              {/* Selection helper buttons & Reset options */}
               <div className="flex items-center gap-2">
                 <button
-                  onClick={() => onToggleAllBids(true, filteredBidActions.map(b => b.id))}
+                  onClick={() => onToggleAllBids(true, sortedAndFilteredBidActions.map(b => b.id))}
                   className="text-xs text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white px-2.5 py-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg transition"
                 >
-                  勾选当前筛选 ({filteredBidActions.length})
+                  勾选当前筛选 ({sortedAndFilteredBidActions.length})
                 </button>
                 <button
                   onClick={() => onToggleAllBids(false)}
@@ -569,6 +851,107 @@ export const ActionTabs: React.FC<ActionTabsProps> = ({
                 </select>
               </div>
 
+              {/* Requirement 4: 自定义列显示按钮 (放置在批量应用左侧，对应用户图一圈选位置) */}
+              <div className="relative ml-auto sm:ml-0">
+                <button
+                  type="button"
+                  onClick={() => setIsColVisMenuOpen(!isColVisMenuOpen)}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs font-semibold hover:border-amber-500 transition shadow-sm text-slate-700 dark:text-slate-200"
+                  title="自定义表格中每一列的显示或隐藏"
+                >
+                  <SlidersHorizontal className="w-3.5 h-3.5 text-amber-500" />
+                  <span>⚙️ 自定义列显示</span>
+                </button>
+
+                {isColVisMenuOpen && (
+                  <div className="absolute right-0 top-full mt-1.5 w-64 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-2xl p-3 z-30 space-y-2 animate-in fade-in">
+                    <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2">
+                      <span className="text-xs font-bold text-slate-900 dark:text-white">自定义展示列</span>
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => handleResetColVis(true)}
+                          className="text-[10px] text-amber-600 hover:underline"
+                        >
+                          全部显示
+                        </button>
+                        <span>·</span>
+                        <button
+                          onClick={() => handleResetColVis(false)}
+                          className="text-[10px] text-blue-600 hover:underline"
+                        >
+                          精简模式
+                        </button>
+                        <span>·</span>
+                        <button
+                          onClick={() => setIsColVisMenuOpen(false)}
+                          className="text-[10px] text-slate-400 hover:text-slate-600"
+                        >
+                          完成
+                        </button>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2 text-xs py-1 max-h-60 overflow-y-auto">
+                      <label className="flex items-center gap-1.5 cursor-pointer">
+                        <input type="checkbox" checked={colVis.matchType} onChange={() => toggleColumn('matchType')} className="rounded text-amber-500 focus:ring-amber-400" />
+                        <span>匹配类型</span>
+                      </label>
+                      <label className="flex items-center gap-1.5 cursor-pointer">
+                        <input type="checkbox" checked={colVis.currentBid} onChange={() => toggleColumn('currentBid')} className="rounded text-amber-500 focus:ring-amber-400" />
+                        <span>原出价</span>
+                      </label>
+                      <label className="flex items-center gap-1.5 cursor-pointer">
+                        <input type="checkbox" checked={colVis.userCustomBid} onChange={() => toggleColumn('userCustomBid')} className="rounded text-amber-500 focus:ring-amber-400" />
+                        <span>最终出价</span>
+                      </label>
+                      <label className="flex items-center gap-1.5 cursor-pointer">
+                        <input type="checkbox" checked={colVis.amazonSuggested} onChange={() => toggleColumn('amazonSuggested')} className="rounded text-amber-500 focus:ring-amber-400" />
+                        <span>建议竞价区间</span>
+                      </label>
+                      <label className="flex items-center gap-1.5 cursor-pointer">
+                        <input type="checkbox" checked={colVis.impressions} onChange={() => toggleColumn('impressions')} className="rounded text-amber-500 focus:ring-amber-400" />
+                        <span>展示量 (曝光)</span>
+                      </label>
+                      <label className="flex items-center gap-1.5 cursor-pointer">
+                        <input type="checkbox" checked={colVis.clicks} onChange={() => toggleColumn('clicks')} className="rounded text-amber-500 focus:ring-amber-400" />
+                        <span>点击量</span>
+                      </label>
+                      <label className="flex items-center gap-1.5 cursor-pointer">
+                        <input type="checkbox" checked={colVis.ctr} onChange={() => toggleColumn('ctr')} className="rounded text-amber-500 focus:ring-amber-400" />
+                        <span>点击率 (CTR)</span>
+                      </label>
+                      <label className="flex items-center gap-1.5 cursor-pointer">
+                        <input type="checkbox" checked={colVis.cpc} onChange={() => toggleColumn('cpc')} className="rounded text-amber-500 focus:ring-amber-400" />
+                        <span>CPC</span>
+                      </label>
+                      <label className="flex items-center gap-1.5 cursor-pointer">
+                        <input type="checkbox" checked={colVis.spend} onChange={() => toggleColumn('spend')} className="rounded text-amber-500 focus:ring-amber-400" />
+                        <span>总成本 (花费)</span>
+                      </label>
+                      <label className="flex items-center gap-1.5 cursor-pointer">
+                        <input type="checkbox" checked={colVis.orders} onChange={() => toggleColumn('orders')} className="rounded text-amber-500 focus:ring-amber-400" />
+                        <span>购买量 (订单)</span>
+                      </label>
+                      <label className="flex items-center gap-1.5 cursor-pointer">
+                        <input type="checkbox" checked={colVis.sales} onChange={() => toggleColumn('sales')} className="rounded text-amber-500 focus:ring-amber-400" />
+                        <span>销售额</span>
+                      </label>
+                      <label className="flex items-center gap-1.5 cursor-pointer">
+                        <input type="checkbox" checked={colVis.acos} onChange={() => toggleColumn('acos')} className="rounded text-amber-500 focus:ring-amber-400" />
+                        <span>当前 ACOS</span>
+                      </label>
+                      <label className="flex items-center gap-1.5 cursor-pointer">
+                        <input type="checkbox" checked={colVis.roas} onChange={() => toggleColumn('roas')} className="rounded text-amber-500 focus:ring-amber-400" />
+                        <span>ROAS</span>
+                      </label>
+                      <label className="flex items-center gap-1.5 cursor-pointer">
+                        <input type="checkbox" checked={colVis.reason} onChange={() => toggleColumn('reason')} className="rounded text-amber-500 focus:ring-amber-400" />
+                        <span>调价依据与建议</span>
+                      </label>
+                    </div>
+                  </div>
+                )}
+              </div>
+
               {/* Apply Button */}
               <button
                 onClick={handleApplyBatchBid}
@@ -580,47 +963,74 @@ export const ActionTabs: React.FC<ActionTabsProps> = ({
             </div>
           </div>
 
-          {/* Table */}
+          {/* Search bar inside Bid Tab */}
+          <div className="relative">
+            <Search className="w-4 h-4 absolute left-3 top-2.5 text-slate-400" />
+            <input
+              type="text"
+              placeholder="搜索当前列表关键词、广告活动名称..."
+              value={searchTerm}
+              onChange={e => setSearchTerm(e.target.value)}
+              className="w-full pl-9 pr-4 py-1.5 bg-slate-50 dark:bg-slate-950/40 border border-slate-200 dark:border-slate-800 rounded-xl text-xs text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:border-amber-500"
+            />
+          </div>
+
+          {/* Table Container - supports smooth horizontal scrolling when columns are many or font is large */}
           <div className="overflow-x-auto border border-slate-200 dark:border-slate-800 rounded-xl shadow-sm">
-            <table className="w-full text-left text-xs text-slate-600 dark:text-slate-300 whitespace-nowrap">
+            <table className={`w-full text-left ${fontSizeClass} text-slate-600 dark:text-slate-300 whitespace-nowrap`}>
               <thead className="bg-slate-100 dark:bg-slate-950/80 text-slate-600 dark:text-slate-400 uppercase text-[11px] font-semibold border-b border-slate-200 dark:border-slate-800">
                 <tr>
-                  <th className="p-3 w-10 text-center">选择</th>
-                  <th className="p-3">关键词 / 投放</th>
-                  <th className="p-3">匹配类型</th>
-                  <th className="p-3">原出价 (原竞价)</th>
-                  <th className="p-3 text-amber-600 dark:text-amber-400">
-                    最终调价 (在原价基础上自由微调)
+                  {/* Requirement 1: Header Select All Checkbox (图一位置) */}
+                  <th className={`${cellPadding} w-10 text-center select-none`}>
+                    <button
+                      onClick={() => onToggleAllBids(!allFilteredSelected, sortedAndFilteredBidActions.map(b => b.id))}
+                      className="p-1 rounded hover:bg-slate-200 dark:hover:bg-slate-700 transition flex items-center justify-center mx-auto"
+                      title={allFilteredSelected ? '取消全选当前显示项' : `全选当前显示的全部 ${sortedAndFilteredBidActions.length} 项`}
+                    >
+                      {allFilteredSelected ? (
+                        <CheckSquare className="w-4 h-4 text-amber-500" />
+                      ) : someFilteredSelected ? (
+                        <div className="w-4 h-4 rounded border-2 border-amber-500 bg-amber-500/20 flex items-center justify-center text-amber-500 font-black text-[10px] leading-none">
+                          -
+                        </div>
+                      ) : (
+                        <Square className="w-4 h-4 text-slate-400 hover:text-slate-600" />
+                      )}
+                    </button>
                   </th>
-                  <th className="p-3">调整幅度</th>
-                  <th className="p-3">算法保本参考</th>
-                  <th className="p-3">展示量 (曝光)</th>
-                  <th className="p-3">点击量</th>
-                  <th className="p-3">总成本 / 购买量</th>
-                  <th className="p-3">当前 ACOS</th>
-                  <th className="p-3">调价依据与建议</th>
+
+                  {renderSortHeader('关键词 / 投放', 'keywordText')}
+                  {colVis.matchType && renderSortHeader('投放匹配类型', 'matchType')}
+                  {colVis.currentBid && renderSortHeader('原出价 (USD)', 'currentBid')}
+                  {colVis.userCustomBid && renderSortHeader('最终出价 (自由微调)', 'userCustomBid', 'text-amber-600 dark:text-amber-400')}
+                  {colVis.amazonSuggested && renderSortHeader('建议竞价 (区间)', 'suggestedBidMed')}
+                  {colVis.impressions && renderSortHeader('展示量 (曝光)', 'impressions')}
+                  {colVis.clicks && renderSortHeader('点击量', 'clicks')}
+                  {colVis.ctr && renderSortHeader('点击率 (CTR)', 'ctr')}
+                  {colVis.cpc && renderSortHeader('CPC (USD)', 'cpc')}
+                  {colVis.spend && renderSortHeader('总成本 (USD)', 'spend')}
+                  {colVis.orders && renderSortHeader('购买量 (订单)', 'orders')}
+                  {colVis.sales && renderSortHeader('销售额 (USD)', 'sales')}
+                  {colVis.acos && renderSortHeader('当前 ACOS', 'acos')}
+                  {colVis.roas && renderSortHeader('ROAS', 'roas')}
+                  {colVis.reason && <th className={cellPadding}>调价依据与建议</th>}
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60 font-mono">
-                {filteredBidActions.map((action, idx) => {
-                  // User's active final bid (defaults to currentBid if not customized yet)
+                {sortedAndFilteredBidActions.map((action, idx) => {
                   const effectiveFinalBid = action.userCustomBid !== undefined 
                     ? action.userCustomBid 
                     : action.currentBid; // DEFAULTS TO ORIGINAL BID!
-
-                  const diffPercent = action.currentBid > 0 
-                    ? Number((((effectiveFinalBid - action.currentBid) / action.currentBid) * 100).toFixed(1))
-                    : 0;
 
                   return (
                     <tr 
                       key={action.id}
                       className={`hover:bg-slate-50 dark:hover:bg-slate-800/40 transition select-none ${
-                        action.selected ? 'bg-amber-50/40 dark:bg-amber-950/10' : 'opacity-85'
+                        action.selected ? 'bg-amber-50/40 dark:bg-amber-950/10' : 'opacity-90'
                       }`}
                     >
                       {/* Checkbox (Shift-click range select support, default unchecked) */}
-                      <td className="p-3 text-center">
+                      <td className={`${cellPadding} text-center`}>
                         <button 
                           onClick={e => handleBidClick(idx, action.id, e)}
                           className="text-slate-400 hover:text-amber-500 dark:hover:text-amber-400"
@@ -634,28 +1044,45 @@ export const ActionTabs: React.FC<ActionTabsProps> = ({
                         </button>
                       </td>
 
-                      {/* Keyword */}
-                      <td className="p-3 font-sans font-semibold text-slate-900 dark:text-white max-w-[200px] truncate">
-                        {action.item.keywordText}
+                      {/* Requirement 3.3: Click Keyword to Copy (图四) */}
+                      <td className={`${cellPadding} font-sans font-semibold text-slate-900 dark:text-white max-w-[260px]`}>
+                        <div 
+                          onClick={() => handleCopyKeyword(action.item.keywordText)}
+                          className="flex items-center gap-1.5 group cursor-pointer hover:text-amber-600 dark:hover:text-amber-400 transition"
+                          title={`点击一键复制关键词: ${action.item.keywordText}`}
+                        >
+                          <span className="truncate">{action.item.keywordText}</span>
+                          {copiedKeyword === action.item.keywordText ? (
+                            <span className="inline-flex items-center gap-0.5 text-[10px] text-emerald-600 font-bold bg-emerald-50 dark:bg-emerald-950/30 px-1 py-0.2 rounded border border-emerald-200">
+                              <Check className="w-3 h-3" /> 已复制
+                            </span>
+                          ) : (
+                            <Copy className="w-3 h-3 text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" />
+                          )}
+                        </div>
                       </td>
 
                       {/* Match Type */}
-                      <td className="p-3 font-sans">
-                        <span className="px-2 py-0.5 rounded text-[10px] bg-slate-100 dark:bg-slate-800 border border-slate-200">
-                          {action.item.matchTypeDisplay}
-                        </span>
-                      </td>
+                      {colVis.matchType && (
+                        <td className={`${cellPadding} font-sans`}>
+                          <span className="px-2 py-0.5 rounded text-[10px] bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+                            {action.item.matchTypeDisplay}
+                          </span>
+                        </td>
+                      )}
 
-                      {/* Original Bid */}
-                      <td className="p-3 font-bold text-slate-900 dark:text-slate-100 text-sm">
-                        ${action.currentBid.toFixed(2)}
-                      </td>
+                      {/* Original Bid (原出价) */}
+                      {colVis.currentBid && (
+                        <td className={`${cellPadding} font-bold text-slate-900 dark:text-slate-100`}>
+                          ${action.currentBid.toFixed(2)}
+                        </td>
+                      )}
 
-                      {/* Final Bid with Inline Quick Helper Buttons */}
-                      <td className="p-3 font-sans">
-                        <div className="flex items-center gap-1.5">
+                      {/* Final Bid Input (微调，默认显示原出价) */}
+                      {colVis.userCustomBid && (
+                        <td className={`${cellPadding} font-sans`}>
                           <div className="flex items-center font-mono font-bold text-amber-600 dark:text-amber-400">
-                            <span>$</span>
+                            <span className="mr-0.5">$</span>
                             <input
                               type="number"
                               step="0.01"
@@ -668,96 +1095,122 @@ export const ActionTabs: React.FC<ActionTabsProps> = ({
                               className="w-16 px-1.5 py-0.5 rounded bg-white dark:bg-slate-800 border border-amber-300 dark:border-amber-700 text-amber-600 dark:text-amber-400 font-mono text-xs focus:outline-none focus:border-amber-500 shadow-sm"
                             />
                           </div>
+                        </td>
+                      )}
 
-                          {/* Inline Quick Tweaks based on Original Bid */}
-                          <div className="flex items-center gap-1 font-mono text-[10px]">
-                            <button
-                              onClick={() => handleInlineDelta(action, 'pct', -10)}
-                              className="px-1.5 py-0.5 rounded bg-slate-100 hover:bg-rose-50 text-rose-600 border border-slate-200 transition"
-                              title="在当前价基础上下调 10%"
-                            >
-                              -10%
-                            </button>
-                            <button
-                              onClick={() => handleInlineDelta(action, 'amt', -0.10)}
-                              className="px-1.5 py-0.5 rounded bg-slate-100 hover:bg-rose-50 text-rose-600 border border-slate-200 transition"
-                              title="在当前价基础上下调 $0.10"
-                            >
-                              -$0.1
-                            </button>
-                            <button
-                              onClick={() => handleInlineDelta(action, 'amt', 0.10)}
-                              className="px-1.5 py-0.5 rounded bg-slate-100 hover:bg-emerald-50 text-emerald-600 border border-slate-200 transition"
-                              title="在当前价基础上增加 $0.10"
-                            >
-                              +$0.1
-                            </button>
-                            <button
-                              onClick={() => {
-                                onCustomBidChange(action.id, action.suggestedBid);
-                                if (!action.selected) onToggleBidAction(action.id);
-                              }}
-                              className="px-1.5 py-0.5 rounded bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-200 font-sans transition text-[10px]"
-                              title={`填入系统保本建议价 $${action.suggestedBid}`}
-                            >
-                              填建议价
-                            </button>
-                          </div>
-                        </div>
-                      </td>
-
-                      {/* Diff Percent */}
-                      <td className="p-3">
-                        <span className={`inline-flex items-center gap-0.5 font-bold ${
-                          diffPercent < 0 
-                            ? 'text-rose-600 dark:text-rose-400' 
-                            : (diffPercent > 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-400')
-                        }`}>
-                          {diffPercent < 0 && <ArrowDownRight className="w-3.5 h-3.5" />}
-                          {diffPercent > 0 && <ArrowUpRight className="w-3.5 h-3.5" />}
-                          {diffPercent === 0 ? '持平' : `${diffPercent}%`}
-                        </span>
-                      </td>
-
-                      {/* Algorithmic Reference */}
-                      <td className="p-3 text-slate-500 font-mono text-xs">
-                        <span className="text-slate-400">参考:</span> ${action.suggestedBid.toFixed(2)}
-                      </td>
+                      {/* Requirement 3.4: 替换为表格里的建议竞价及区间 (图五) */}
+                      {colVis.amazonSuggested && (
+                        <td className={`${cellPadding} font-mono text-xs`}>
+                          {action.item.suggestedBidMed && action.item.suggestedBidMed > 0 ? (
+                            <div className="flex items-center gap-1.5">
+                              <div>
+                                <span className="font-bold text-slate-900 dark:text-white">
+                                  ${action.item.suggestedBidMed.toFixed(2)}
+                                </span>
+                                <span className="text-[10px] text-slate-400 block font-sans">
+                                  (${action.item.suggestedBidLow ? action.item.suggestedBidLow.toFixed(2) : '-'} - ${action.item.suggestedBidHigh ? action.item.suggestedBidHigh.toFixed(2) : '-'})
+                                </span>
+                              </div>
+                              <button
+                                onClick={() => {
+                                  onCustomBidChange(action.id, action.item.suggestedBidMed || 0);
+                                  if (!action.selected) onToggleBidAction(action.id);
+                                }}
+                                className="px-1.5 py-0.5 rounded text-[10px] bg-amber-50 dark:bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-500/20 hover:bg-amber-100 transition"
+                                title="一键将此亚马逊建议竞价填入最终出价"
+                              >
+                                填入
+                              </button>
+                            </div>
+                          ) : (
+                            <span className="text-slate-400">-</span>
+                          )}
+                        </td>
+                      )}
 
                       {/* Impressions */}
-                      <td className="p-3 text-slate-600 dark:text-slate-400">
-                        {action.item.impressions.toLocaleString()}
-                      </td>
+                      {colVis.impressions && (
+                        <td className={`${cellPadding} text-slate-600 dark:text-slate-400`}>
+                          {action.item.impressions.toLocaleString()}
+                        </td>
+                      )}
 
                       {/* Clicks */}
-                      <td className="p-3 font-semibold text-slate-700 dark:text-slate-300">
-                        {action.item.clicks}
-                      </td>
+                      {colVis.clicks && (
+                        <td className={`${cellPadding} font-semibold text-slate-700 dark:text-slate-300`}>
+                          {action.item.clicks}
+                        </td>
+                      )}
 
-                      {/* Spend / Orders */}
-                      <td className="p-3 text-slate-600 dark:text-slate-400">
-                        ${action.item.spend.toFixed(2)} / {action.item.orders}单
-                      </td>
+                      {/* CTR */}
+                      {colVis.ctr && (
+                        <td className={`${cellPadding} text-slate-600 dark:text-slate-400`}>
+                          {action.item.ctr}%
+                        </td>
+                      )}
 
-                      {/* Current ACOS */}
-                      <td className="p-3">
-                        {action.item.orders === 0 && action.item.spend > 0 ? (
-                          <span className="text-rose-600 font-bold">999% (0单)</span>
-                        ) : (
-                          <span className={`font-bold ${action.item.acos > 50 ? 'text-rose-600' : 'text-slate-700'}`}>
-                            {action.item.acos}%
-                          </span>
-                        )}
-                      </td>
+                      {/* CPC */}
+                      {colVis.cpc && (
+                        <td className={`${cellPadding} text-slate-600 dark:text-slate-400`}>
+                          ${action.item.cpc.toFixed(2)}
+                        </td>
+                      )}
+
+                      {/* Spend */}
+                      {colVis.spend && (
+                        <td className={`${cellPadding} font-medium text-slate-900 dark:text-slate-100`}>
+                          ${action.item.spend.toFixed(2)}
+                        </td>
+                      )}
+
+                      {/* Orders */}
+                      {colVis.orders && (
+                        <td className={`${cellPadding} text-slate-700 dark:text-slate-300`}>
+                          {action.item.orders} 单
+                        </td>
+                      )}
+
+                      {/* Sales */}
+                      {colVis.sales && (
+                        <td className={`${cellPadding} font-semibold text-slate-900 dark:text-slate-100`}>
+                          ${action.item.sales.toFixed(2)}
+                        </td>
+                      )}
+
+                      {/* ACOS */}
+                      {colVis.acos && (
+                        <td className={cellPadding}>
+                          {action.item.orders === 0 && action.item.spend > 0 ? (
+                            <span className="text-rose-600 font-bold">999% (0单)</span>
+                          ) : (
+                            <span className={`font-bold ${action.item.acos > 50 ? 'text-rose-600' : 'text-slate-700 dark:text-slate-300'}`}>
+                              {action.item.acos}%
+                            </span>
+                          )}
+                        </td>
+                      )}
+
+                      {/* ROAS */}
+                      {colVis.roas && (
+                        <td className={`${cellPadding} text-slate-700 dark:text-slate-300 font-medium`}>
+                          {action.item.roas.toFixed(2)}
+                        </td>
+                      )}
 
                       {/* Reason */}
-                      <td className="p-3 font-sans text-slate-500 text-[11px] max-w-[260px] truncate" title={action.reason}>
-                        {action.type === 'zero_impression_boost' ? (
-                          <span className="text-blue-600 dark:text-blue-400 font-medium">💤 {action.reason}</span>
-                        ) : (
-                          action.reason
-                        )}
-                      </td>
+                      {colVis.reason && (
+                        <td className={`${cellPadding} font-sans text-slate-500 text-[11px] max-w-[280px] truncate`} title={action.reason}>
+                          {action.type === 'zero_impression_boost' ? (
+                            <span className="text-blue-600 dark:text-blue-400 font-medium">💤 {action.reason}</span>
+                          ) : action.type === 'decrease_bid' ? (
+                            <span className="text-rose-600 dark:text-rose-400 font-medium">📉 {action.reason}</span>
+                          ) : action.type === 'increase_bid' ? (
+                            <span className="text-emerald-600 dark:text-emerald-400 font-medium">📈 {action.reason}</span>
+                          ) : (
+                            <span className="text-slate-600 dark:text-slate-400">👀 {action.reason}</span>
+                          )}
+                        </td>
+                      )}
                     </tr>
                   );
                 })}
@@ -797,18 +1250,18 @@ export const ActionTabs: React.FC<ActionTabsProps> = ({
           </div>
 
           <div className="overflow-x-auto border border-slate-200 dark:border-slate-800 rounded-xl shadow-sm">
-            <table className="w-full text-left text-xs text-slate-600 dark:text-slate-300 whitespace-nowrap">
+            <table className={`w-full text-left ${fontSizeClass} text-slate-600 dark:text-slate-300 whitespace-nowrap`}>
               <thead className="bg-slate-100 dark:bg-slate-950/80 text-slate-600 dark:text-slate-400 uppercase text-[11px] font-semibold border-b border-slate-200 dark:border-slate-800">
                 <tr>
-                  <th className="p-3 w-10 text-center">状态</th>
-                  <th className="p-3">搜索词 / 投放 ASIN</th>
-                  <th className="p-3">匹配类型</th>
-                  <th className="p-3">展示曝光</th>
-                  <th className="p-3">点击量</th>
-                  <th className="p-3 text-rose-600 dark:text-rose-400">浪费总成本</th>
-                  <th className="p-3">购买量</th>
-                  <th className="p-3">建议操作</th>
-                  <th className="p-3">诊断依据</th>
+                  <th className={`${cellPadding} w-10 text-center`}>状态</th>
+                  <th className={cellPadding}>搜索词 / 投放 ASIN</th>
+                  <th className={cellPadding}>匹配类型</th>
+                  <th className={cellPadding}>展示曝光</th>
+                  <th className={cellPadding}>点击量</th>
+                  <th className={`${cellPadding} text-rose-600 dark:text-rose-400`}>浪费总成本</th>
+                  <th className={cellPadding}>购买量</th>
+                  <th className={cellPadding}>建议操作</th>
+                  <th className={cellPadding}>诊断依据</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60 font-mono">
@@ -820,7 +1273,7 @@ export const ActionTabs: React.FC<ActionTabsProps> = ({
                     }`}
                     onClick={e => handleNegClick(idx, action.id, e)}
                   >
-                    <td className="p-3 text-center" onClick={e => e.stopPropagation()}>
+                    <td className={`${cellPadding} text-center`} onClick={e => e.stopPropagation()}>
                       <button 
                         onClick={e => handleNegClick(idx, action.id, e)}
                         className="text-slate-400 hover:text-rose-500 dark:hover:text-amber-400"
@@ -833,32 +1286,32 @@ export const ActionTabs: React.FC<ActionTabsProps> = ({
                         )}
                       </button>
                     </td>
-                    <td className="p-3 font-sans font-semibold text-slate-900 dark:text-white max-w-[220px] truncate">
+                    <td className={`${cellPadding} font-sans font-semibold text-slate-900 dark:text-white max-w-[220px] truncate`}>
                       {action.keywordText}
                     </td>
-                    <td className="p-3 font-sans">
-                      <span className="px-2 py-0.5 rounded text-[10px] bg-slate-100 dark:bg-slate-800 border border-slate-200">
+                    <td className={`${cellPadding} font-sans`}>
+                      <span className="px-2 py-0.5 rounded text-[10px] bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
                         {action.item.matchTypeDisplay}
                       </span>
                     </td>
-                    <td className="p-3 text-slate-600">
+                    <td className={`${cellPadding} text-slate-600`}>
                       {action.item.impressions.toLocaleString()}
                     </td>
-                    <td className="p-3 font-semibold text-slate-800 dark:text-slate-200">
+                    <td className={`${cellPadding} font-semibold text-slate-800 dark:text-slate-200`}>
                       {action.clicks} 次
                     </td>
-                    <td className="p-3 font-bold text-rose-600 dark:text-rose-400">
+                    <td className={`${cellPadding} font-bold text-rose-600 dark:text-rose-400`}>
                       ${action.wastedSpend.toFixed(2)}
                     </td>
-                    <td className="p-3 text-slate-500">
+                    <td className={`${cellPadding} text-slate-500`}>
                       0 单 (0%)
                     </td>
-                    <td className="p-3 font-sans">
+                    <td className={`${cellPadding} font-sans`}>
                       <span className="px-2 py-0.5 rounded text-[11px] font-semibold bg-rose-50 dark:bg-rose-500/20 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-500/30">
                         {action.type === 'negative_product' ? '否定商品投放' : '精准否定'}
                       </span>
                     </td>
-                    <td className="p-3 font-sans text-slate-500 text-[11px] max-w-[300px]">
+                    <td className={`${cellPadding} font-sans text-slate-500 text-[11px] max-w-[300px]`}>
                       {action.reason}
                     </td>
                   </tr>
@@ -887,46 +1340,46 @@ export const ActionTabs: React.FC<ActionTabsProps> = ({
           </div>
 
           <div className="overflow-x-auto border border-slate-200 dark:border-slate-800 rounded-xl shadow-sm">
-            <table className="w-full text-left text-xs text-slate-600 dark:text-slate-300 whitespace-nowrap">
+            <table className={`w-full text-left ${fontSizeClass} text-slate-600 dark:text-slate-300 whitespace-nowrap`}>
               <thead className="bg-slate-100 dark:bg-slate-950/80 text-slate-600 dark:text-slate-400 uppercase text-[11px] font-semibold border-b border-slate-200 dark:border-slate-800">
                 <tr>
-                  <th className="p-3">优质搜索词</th>
-                  <th className="p-3">原匹配类型</th>
-                  <th className="p-3 text-emerald-600 dark:text-emerald-400">购买量 (订单)</th>
-                  <th className="p-3">总销售额 (USD)</th>
-                  <th className="p-3 text-emerald-600 dark:text-emerald-400">优秀 ACOS</th>
-                  <th className="p-3">ROAS</th>
-                  <th className="p-3">建议精准出价</th>
-                  <th className="p-3">运营建议</th>
+                  <th className={cellPadding}>优质搜索词</th>
+                  <th className={cellPadding}>原匹配类型</th>
+                  <th className={`${cellPadding} text-emerald-600 dark:text-emerald-400`}>购买量 (订单)</th>
+                  <th className={cellPadding}>总销售额 (USD)</th>
+                  <th className={`${cellPadding} text-emerald-600 dark:text-emerald-400`}>优秀 ACOS</th>
+                  <th className={cellPadding}>ROAS</th>
+                  <th className={cellPadding}>建议精准出价</th>
+                  <th className={cellPadding}>运营建议</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60 font-mono">
                 {harvestActions.map(action => (
                   <tr key={action.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition">
-                    <td className="p-3 font-sans font-bold text-slate-900 dark:text-white max-w-[220px] truncate">
+                    <td className={`${cellPadding} font-sans font-bold text-slate-900 dark:text-white max-w-[220px] truncate`}>
                       {action.keywordText}
                     </td>
-                    <td className="p-3 font-sans">
+                    <td className={`${cellPadding} font-sans`}>
                       <span className="px-2 py-0.5 rounded text-[10px] bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
                         {action.item.matchTypeDisplay}
                       </span>
                     </td>
-                    <td className="p-3 font-bold text-emerald-600 dark:text-emerald-400">
+                    <td className={`${cellPadding} font-bold text-emerald-600 dark:text-emerald-400`}>
                       {action.orders} 笔订单
                     </td>
-                    <td className="p-3 text-slate-700 dark:text-slate-200 font-bold">
+                    <td className={`${cellPadding} text-slate-700 dark:text-slate-200 font-bold`}>
                       ${action.sales.toFixed(2)}
                     </td>
-                    <td className="p-3 font-bold text-emerald-600 dark:text-emerald-400">
+                    <td className={`${cellPadding} font-bold text-emerald-600 dark:text-emerald-400`}>
                       {action.acos}%
                     </td>
-                    <td className="p-3 font-bold text-slate-800">
+                    <td className={`${cellPadding} font-bold text-slate-800`}>
                       {action.item.roas}
                     </td>
-                    <td className="p-3 font-semibold text-amber-600 dark:text-amber-400">
+                    <td className={`${cellPadding} font-semibold text-amber-600 dark:text-amber-400`}>
                       ${action.suggestedBid}
                     </td>
-                    <td className="p-3 font-sans text-slate-600 dark:text-slate-300 text-[11px] max-w-[280px]">
+                    <td className={`${cellPadding} font-sans text-slate-600 dark:text-slate-300 text-[11px] max-w-[280px]`}>
                       {action.reason}
                     </td>
                   </tr>
@@ -948,246 +1401,155 @@ export const ActionTabs: React.FC<ActionTabsProps> = ({
       {activeTab === 'all' && (
         <div className="p-4 space-y-4">
           <div className="flex flex-wrap items-center justify-between gap-3 bg-slate-50 dark:bg-slate-950/40 p-3 rounded-xl border border-slate-200 dark:border-slate-800">
-            <div className="flex flex-wrap items-center gap-3 flex-1">
-              <div className="relative min-w-[240px] max-w-sm flex-1">
-                <Search className="w-4 h-4 absolute left-3 top-2.5 text-slate-400" />
-                <input
-                  type="text"
-                  placeholder="搜索关键词、匹配类型、广告活动..."
-                  value={searchTerm}
-                  onChange={e => setSearchTerm(e.target.value)}
-                  className="w-full pl-9 pr-3 py-1.5 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:border-amber-500"
-                />
-              </div>
+            <div className="relative flex-1 min-w-[240px]">
+              <Search className="w-4 h-4 absolute left-3 top-2.5 text-slate-400" />
+              <input
+                type="text"
+                placeholder="搜索关键词、匹配类型、广告活动..."
+                value={searchTerm}
+                onChange={e => setSearchTerm(e.target.value)}
+                className="w-full pl-9 pr-4 py-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-xs text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:border-blue-500"
+              />
+            </div>
 
-              <label className="flex items-center gap-2 text-xs text-slate-600 dark:text-slate-300 cursor-pointer select-none">
+            <div className="flex items-center gap-4 text-xs">
+              <label className="flex items-center gap-1.5 cursor-pointer select-none text-slate-600 dark:text-slate-300">
                 <input
                   type="checkbox"
                   checked={filterOnlyActive}
                   onChange={e => setFilterOnlyActive(e.target.checked)}
-                  className="rounded text-amber-500 focus:ring-amber-400"
+                  className="rounded text-blue-600 focus:ring-blue-500 dark:bg-slate-800"
                 />
-                <span>仅看有流量/有花费词 ({allItems.filter(i => i.clicks > 0 || i.spend > 0).length}项)</span>
+                <span>仅看有流量/有花费词 ({allItems.filter(i => i.clicks > 0 || i.spend > 0).length})</span>
               </label>
-            </div>
 
-            <div className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-2">
-              <span>点击表头字段可直接升降序排列</span>
-              <span>·</span>
-              <span>共显示 <strong className="text-slate-900 dark:text-white">{sortedAndFilteredAllItems.length}</strong> 条数据</span>
+              <span className="text-slate-400">
+                点击表头字即可直接升降序排列 · 共显示 {sortedAndFilteredAllItems.length} 条数据
+              </span>
             </div>
           </div>
 
           <div className="overflow-x-auto border border-slate-200 dark:border-slate-800 rounded-xl shadow-sm">
-            <table className="w-full text-left text-xs text-slate-600 dark:text-slate-300 whitespace-nowrap">
-              <thead className="bg-slate-100 dark:bg-slate-950/80 text-slate-600 dark:text-slate-400 uppercase text-[11px] font-semibold border-b border-slate-200 dark:border-slate-800 sticky top-0 select-none">
+            <table className={`w-full text-left ${fontSizeClass} text-slate-600 dark:text-slate-300 whitespace-nowrap`}>
+              <thead className="bg-slate-100 dark:bg-slate-950/80 text-slate-600 dark:text-slate-400 uppercase text-[11px] font-semibold border-b border-slate-200 dark:border-slate-800">
                 <tr>
-                  <th className="p-3">关键词 / 投放</th>
-                  <th className="p-3">投放匹配类型</th>
-                  <th className="p-3">状态</th>
-                  <th className="p-3 cursor-pointer hover:text-amber-600" onClick={() => handleSort('currentBid')}>
-                    <div className="flex items-center gap-1">
-                      <span>竞价 (USD)</span>
-                      <ArrowUpDown className="w-3 h-3" />
-                    </div>
-                  </th>
-                  <th className="p-3 cursor-pointer hover:text-amber-600" onClick={() => handleSort('impressions')}>
-                    <div className="flex items-center gap-1">
-                      <span>展示量 (曝光)</span>
-                      <ArrowUpDown className="w-3 h-3" />
-                    </div>
-                  </th>
-                  <th className="p-3 cursor-pointer hover:text-amber-600" onClick={() => handleSort('clicks')}>
-                    <div className="flex items-center gap-1">
-                      <span>点击量</span>
-                      <ArrowUpDown className="w-3 h-3" />
-                    </div>
-                  </th>
-                  <th className="p-3 cursor-pointer hover:text-amber-600" onClick={() => handleSort('ctr')}>
-                    <div className="flex items-center gap-1">
-                      <span>点击率 (CTR)</span>
-                      <ArrowUpDown className="w-3 h-3" />
-                    </div>
-                  </th>
-                  <th className="p-3 cursor-pointer hover:text-amber-600" onClick={() => handleSort('cpc')}>
-                    <div className="flex items-center gap-1">
-                      <span>CPC (USD)</span>
-                      <ArrowUpDown className="w-3 h-3" />
-                    </div>
-                  </th>
-                  <th className="p-3 cursor-pointer hover:text-amber-600" onClick={() => handleSort('spend')}>
-                    <div className="flex items-center gap-1">
-                      <span>总成本 (USD)</span>
-                      <ArrowUpDown className="w-3 h-3" />
-                    </div>
-                  </th>
-                  <th className="p-3 cursor-pointer hover:text-amber-600" onClick={() => handleSort('orders')}>
-                    <div className="flex items-center gap-1">
-                      <span>购买量 (订单)</span>
-                      <ArrowUpDown className="w-3 h-3" />
-                    </div>
-                  </th>
-                  <th className="p-3 cursor-pointer hover:text-amber-600" onClick={() => handleSort('sales')}>
-                    <div className="flex items-center gap-1">
-                      <span>销售额 (USD)</span>
-                      <ArrowUpDown className="w-3 h-3" />
-                    </div>
-                  </th>
-                  <th className="p-3 cursor-pointer hover:text-amber-600" onClick={() => handleSort('acos')}>
-                    <div className="flex items-center gap-1">
-                      <span>ACOS</span>
-                      <ArrowUpDown className="w-3 h-3" />
-                    </div>
-                  </th>
-                  <th className="p-3 cursor-pointer hover:text-amber-600" onClick={() => handleSort('roas')}>
-                    <div className="flex items-center gap-1">
-                      <span>ROAS</span>
-                      <ArrowUpDown className="w-3 h-3" />
-                    </div>
-                  </th>
-                  <th className="p-3">建议竞价区间</th>
-                  <th className="p-3">首页展示份额</th>
-                  <th className="p-3">智能诊断结论</th>
+                  <th className={cellPadding}>关键词 / 投放</th>
+                  <th className={cellPadding}>投放匹配类型</th>
+                  <th className={cellPadding}>状态</th>
+                  {renderSortHeader('竞价 (USD)', 'currentBid')}
+                  {renderSortHeader('展示量 (曝光)', 'impressions')}
+                  {renderSortHeader('点击量', 'clicks')}
+                  {renderSortHeader('点击率 (CTR)', 'ctr')}
+                  {renderSortHeader('CPC (USD)', 'cpc')}
+                  {renderSortHeader('总成本 (USD)', 'spend')}
+                  {renderSortHeader('购买量 (订单)', 'orders')}
+                  {renderSortHeader('销售额 (USD)', 'sales')}
+                  {renderSortHeader('ACOS', 'acos')}
+                  {renderSortHeader('ROAS', 'roas')}
+                  <th className={cellPadding}>建议竞价区间</th>
+                  <th className={cellPadding}>首页展示份额</th>
+                  <th className={cellPadding}>智能诊断结论</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60 font-mono">
-                {sortedAndFilteredAllItems.map((item, idx) => {
-                  const isBleeding = item.orders === 0 && item.spend > 0;
-                  const isSevereAcos = item.acos > 50 && item.orders > 0;
+                {sortedAndFilteredAllItems.map(item => {
+                  const isBleeding = item.clicks >= 10 && item.orders === 0;
+                  const isHighAcos = item.orders > 0 && item.acos > 28;
+                  const isHealthy = item.orders > 0 && item.acos <= 28;
 
                   return (
-                    <tr 
-                      key={idx} 
-                      className={`hover:bg-slate-50 dark:hover:bg-slate-800/40 transition text-xs ${
-                        isBleeding ? 'bg-rose-50/20' : (isSevereAcos ? 'bg-amber-50/20' : '')
-                      }`}
-                    >
-                      {/* Keyword */}
-                      <td className="p-3 font-sans font-semibold text-slate-900 dark:text-white max-w-[200px] truncate">
-                        {item.keywordText}
+                    <tr key={`${item.id}_${item.originalRowIndex}`} className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition">
+                      <td className={`${cellPadding} font-sans font-bold text-slate-900 dark:text-white max-w-[200px] truncate`}>
+                        <div 
+                          onClick={() => handleCopyKeyword(item.keywordText)}
+                          className="flex items-center gap-1.5 group cursor-pointer hover:text-blue-600 dark:hover:text-blue-400 transition"
+                          title={`点击一键复制关键词: ${item.keywordText}`}
+                        >
+                          <span className="truncate">{item.keywordText}</span>
+                          {copiedKeyword === item.keywordText ? (
+                            <span className="inline-flex items-center gap-0.5 text-[10px] text-emerald-600 font-bold bg-emerald-50 dark:bg-emerald-950/30 px-1 py-0.2 rounded border border-emerald-200">
+                              <Check className="w-3 h-3" /> 已复制
+                            </span>
+                          ) : (
+                            <Copy className="w-3 h-3 text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" />
+                          )}
+                        </div>
                       </td>
-
-                      {/* Match Type */}
-                      <td className="p-3 font-sans">
-                        <span className={`px-2 py-0.5 rounded text-[11px] font-medium border ${
-                          item.matchTypeDisplay.includes('精准') 
-                            ? 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-800'
-                            : (item.matchTypeDisplay.includes('短语')
-                              ? 'bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-900/30 dark:text-purple-300 dark:border-purple-800'
-                              : 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-800')
-                        }`}>
+                      <td className={`${cellPadding} font-sans`}>
+                        <span className="px-2 py-0.5 rounded text-[10px] bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
                           {item.matchTypeDisplay}
                         </span>
                       </td>
-
-                      {/* State */}
-                      <td className="p-3 font-sans text-xs">
-                        {item.campaignStatusDetail ? (
-                          <span className="text-amber-600 dark:text-amber-400 font-medium text-[11px]">
-                            {item.campaignStatusDetail}
-                          </span>
-                        ) : (
-                          <span className="text-emerald-600 dark:text-emerald-400">已启用</span>
-                        )}
+                      <td className={`${cellPadding} font-sans text-xs`}>
+                        <span className={item.campaignStatusDetail?.includes('超出预算') ? 'text-amber-600 font-medium' : 'text-slate-500'}>
+                          {item.campaignStatusDetail || item.state}
+                        </span>
                       </td>
-
-                      {/* Bid */}
-                      <td className="p-3 font-bold text-slate-800 dark:text-slate-200">
+                      <td className={`${cellPadding} font-bold text-slate-900 dark:text-slate-100`}>
                         ${item.currentBid.toFixed(2)}
                       </td>
-
-                      {/* Impressions */}
-                      <td className="p-3 text-slate-700 dark:text-slate-300">
+                      <td className={`${cellPadding} text-slate-600 dark:text-slate-400`}>
                         {item.impressions.toLocaleString()}
                       </td>
-
-                      {/* Clicks */}
-                      <td className={`p-3 font-semibold ${item.clicks > 0 ? 'text-blue-600 dark:text-blue-400' : 'text-slate-400'}`}>
+                      <td className={`${cellPadding} font-semibold text-slate-700 dark:text-slate-300`}>
                         {item.clicks}
                       </td>
-
-                      {/* CTR */}
-                      <td className="p-3 text-slate-600 dark:text-slate-400">
+                      <td className={`${cellPadding} text-slate-600 dark:text-slate-400`}>
                         {item.ctr}%
                       </td>
-
-                      {/* CPC */}
-                      <td className="p-3 text-slate-700 dark:text-slate-300">
+                      <td className={`${cellPadding} text-slate-600 dark:text-slate-400`}>
                         ${item.cpc.toFixed(2)}
                       </td>
-
-                      {/* Spend */}
-                      <td className={`p-3 font-bold ${item.spend > 0 ? 'text-rose-600 dark:text-rose-400' : 'text-slate-400'}`}>
+                      <td className={`${cellPadding} font-semibold text-rose-600 dark:text-rose-400`}>
                         ${item.spend.toFixed(2)}
                       </td>
-
-                      {/* Orders */}
-                      <td className={`p-3 font-bold ${item.orders > 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-400'}`}>
+                      <td className={`${cellPadding} text-slate-700 dark:text-slate-300`}>
                         {item.orders}
                       </td>
-
-                      {/* Sales */}
-                      <td className={`p-3 font-semibold ${item.sales > 0 ? 'text-slate-900 dark:text-white' : 'text-slate-400'}`}>
+                      <td className={`${cellPadding} font-bold text-slate-900 dark:text-slate-100`}>
                         ${item.sales.toFixed(2)}
                       </td>
-
-                      {/* ACOS */}
-                      <td className="p-3">
+                      <td className={cellPadding}>
                         {item.orders === 0 && item.spend > 0 ? (
-                          <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-300 border border-rose-300 dark:border-rose-700">
+                          <span className="text-rose-600 font-bold bg-rose-50 dark:bg-rose-950/40 px-1.5 py-0.5 rounded border border-rose-200 dark:border-rose-900/50">
                             999% (0单纯亏)
                           </span>
                         ) : (
-                          <span className={`font-bold ${
-                            item.acos > 50 
-                              ? 'text-rose-600 dark:text-rose-400' 
-                              : (item.acos <= 25 && item.sales > 0 
-                                ? 'text-emerald-600 dark:text-emerald-400' 
-                                : 'text-slate-700 dark:text-slate-300')
-                          }`}>
+                          <span className={`font-bold ${item.acos > 50 ? 'text-rose-600' : 'text-slate-700 dark:text-slate-300'}`}>
                             {item.acos}%
                           </span>
                         )}
                       </td>
-
-                      {/* ROAS */}
-                      <td className="p-3 font-semibold">
-                        <span className={item.roas >= 3 ? 'text-emerald-600' : (item.roas > 0 ? 'text-slate-700 dark:text-slate-300' : 'text-slate-400')}>
-                          {item.roas}
-                        </span>
+                      <td className={`${cellPadding} text-slate-700 dark:text-slate-300`}>
+                        {item.roas.toFixed(2)}
                       </td>
-
-                      {/* Suggested Bids Low - Med - High */}
-                      <td className="p-3 text-[11px] text-slate-500 font-sans">
+                      <td className={`${cellPadding} text-slate-500 text-xs`}>
                         {item.suggestedBidMed ? (
-                          <span>${item.suggestedBidLow} - <strong className="text-slate-700 dark:text-slate-300">${item.suggestedBidMed}</strong> - ${item.suggestedBidHigh}</span>
+                          <span>${item.suggestedBidLow} - ${item.suggestedBidMed} - ${item.suggestedBidHigh}</span>
                         ) : '-'}
                       </td>
-
-                      {/* Top of search share */}
-                      <td className="p-3 text-slate-600 dark:text-slate-400 font-sans">
+                      <td className={`${cellPadding} text-slate-500 text-xs`}>
                         {item.topOfSearchShare || '-'}
                       </td>
-
-                      {/* Diagnostic conclusion */}
-                      <td className="p-3 font-sans">
-                        {item.orders === 0 && item.spend > 10 ? (
-                          <span className="px-2 py-0.5 rounded text-[11px] font-bold bg-rose-50 text-rose-700 border border-rose-200">
+                      <td className={`${cellPadding} font-sans text-xs`}>
+                        {isBleeding && (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-bold bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-300">
                             🛑 吸血亏损，建议否定
                           </span>
-                        ) : (item.acos > 50 && item.orders > 0 ? (
-                          <span className="px-2 py-0.5 rounded text-[11px] font-bold bg-amber-50 text-amber-700 border border-amber-200">
+                        )}
+                        {isHighAcos && (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-bold bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300">
                             📉 ACOS过高，建议降价
                           </span>
-                        ) : (item.orders > 0 && item.acos <= 25 ? (
-                          <span className="px-2 py-0.5 rounded text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                            ⭐ 黄金好词，建议推排位
+                        )}
+                        {isHealthy && (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300">
+                            ⭐ 表现优异，可拓词放量
                           </span>
-                        ) : (item.impressions === 0 ? (
-                          <span className="text-slate-400 text-[11px]">💤 0曝光未激活</span>
-                        ) : (
-                          <span className="text-slate-400 text-[11px]">观察中</span>
-                        ))))}
+                        )}
+                        {!isBleeding && !isHighAcos && !isHealthy && (
+                          <span className="text-slate-400">观察中</span>
+                        )}
                       </td>
                     </tr>
                   );
