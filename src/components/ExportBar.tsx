@@ -1,5 +1,5 @@
 import React from 'react';
-import { Download, CheckCircle, UploadCloud } from 'lucide-react';
+import { Download, CheckCircle, UploadCloud, FileSpreadsheet } from 'lucide-react';
 import { BidAdjustmentAction, NegativeTargetAction, HarvestAction } from '../types/amazon';
 
 interface ExportBarProps {
@@ -7,6 +7,7 @@ interface ExportBarProps {
   negativeActions: NegativeTargetAction[];
   harvestActions: HarvestAction[];
   onExport: () => void;
+  onExportReview?: () => void;
   onOpenTutorial: () => void;
 }
 
@@ -15,6 +16,7 @@ export const ExportBar: React.FC<ExportBarProps> = ({
   negativeActions,
   harvestActions,
   onExport,
+  onExportReview,
   onOpenTutorial
 }) => {
   const selectedBidsCount = bidActions.filter(b => b.selected).length;
@@ -46,18 +48,30 @@ export const ExportBar: React.FC<ExportBarProps> = ({
         </div>
 
         {/* Right buttons */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2.5">
+          {onExportReview && (
+            <button
+              onClick={onExportReview}
+              className="hidden lg:flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-slate-700 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white bg-slate-100 hover:bg-slate-200 dark:bg-slate-900 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl transition"
+              title="下载包含本次所有调价依据、幅度与诊断原因的明细表（仅供卖家内部留存复盘）"
+            >
+              <FileSpreadsheet className="w-4 h-4 text-amber-500" />
+              <span>下载调价复盘明细</span>
+            </button>
+          )}
+
           <button
             onClick={onOpenTutorial}
-            className="hidden sm:flex items-center gap-1.5 px-4 py-2 text-xs font-medium text-slate-700 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white bg-slate-100 hover:bg-slate-200 dark:bg-slate-900 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl transition"
+            className="hidden sm:flex items-center gap-1.5 px-3.5 py-2 text-xs font-medium text-slate-700 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white bg-slate-100 hover:bg-slate-200 dark:bg-slate-900 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl transition"
           >
             <UploadCloud className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-            <span>导出后如何传回后台？</span>
+            <span>传回后台教程</span>
           </button>
 
           <button
             onClick={onExport}
-            className="flex items-center gap-2 px-6 py-2.5 bg-gradient-to-r from-amber-500 to-amber-400 hover:from-amber-400 hover:to-amber-300 text-slate-950 font-black text-sm rounded-xl transition shadow-lg shadow-amber-500/25 active:scale-95"
+            className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-amber-500 to-amber-400 hover:from-amber-400 hover:to-amber-300 text-slate-950 font-black text-sm rounded-xl transition shadow-lg shadow-amber-500/25 active:scale-95"
+            title="采用亚马逊官方标准格式（Product/Entity/Operation），无多余工作表，防后台报错"
           >
             <Download className="w-4 h-4" />
             <span>一键导出亚马逊 Bulk 批量更新表 (.xlsx)</span>

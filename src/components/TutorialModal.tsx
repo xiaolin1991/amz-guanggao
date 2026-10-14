@@ -272,6 +272,26 @@ export const TutorialModal: React.FC<TutorialModalProps> = ({ isOpen, onClose })
                   <br />2. <strong>搜索词报告 (Search Term Report)</strong>：支持拖入进行全面诊断和查看否定建议清单。
                 </p>
               </div>
+
+              <div className="bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/60 rounded-xl p-5">
+                <h4 className="font-semibold text-rose-600 dark:text-rose-400 flex items-center gap-2">
+                  <AlertTriangle className="w-4 h-4" /> 上传亚马逊报错「标头无效」或「必须确保前三个列的标题是产品、实体层级和操作」？
+                </h4>
+                <div className="text-sm text-slate-600 dark:text-slate-300 mt-2 space-y-2 leading-relaxed">
+                  <p>
+                    <strong>原因分析：</strong>
+                    <br />
+                    1. <strong>报表来源差异</strong>：如果您从广告活动里面的“投放”或“关键词”列表中点击了导出，下载的是单向展示的 CSV 投放报表，它缺少亚马逊后台内部的数字 ID（如 Keyword ID、Campaign ID）。亚马逊的“批量操作（Bulk Operations）”系统无法匹配出价修改。
+                    <br />
+                    2. <strong>工作表冲突</strong>：亚马逊批量操作验证极其严苛，不允许存在非亚马逊官方的工作表（例如自定义的复盘明细表），且前三列必须严格为 <code className="bg-white dark:bg-slate-900 px-1 py-0.5 rounded font-mono text-xs">Product</code>、<code className="bg-white dark:bg-slate-900 px-1 py-0.5 rounded font-mono text-xs">Entity</code>、<code className="bg-white dark:bg-slate-900 px-1 py-0.5 rounded font-mono text-xs">Operation</code>。
+                  </p>
+                  <p>
+                    <strong>✅ 正确解决方案：</strong>
+                    <br />
+                    请务必在亚马逊卖家平台点击：<strong className="text-amber-600 dark:text-amber-400">广告 &gt; 广告活动管理 &gt; 左侧菜单「批量操作 (Bulk operations)」&gt; 创建并下载 30天或 60天电子表格</strong>。将下载得到的官方表格拖入本工具进行调价，本工具导出的更新表 100% 完美回传，绝不报错！
+                  </p>
+                </div>
+              </div>
             </div>
           )}
 

@@ -8,21 +8,50 @@
   }
 }
 
-/* Custom scrollbars for data tables */
+/* Custom scrollbars for data tables - thicker and clearly visible */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 8px;
+  height: 10px;
 }
 ::-webkit-scrollbar-track {
-  background: rgba(241, 245, 249, 0.8);
+  background: rgba(241, 245, 249, 0.95);
+  border-radius: 4px;
 }
 .dark ::-webkit-scrollbar-track {
-  background: rgba(15, 23, 42, 0.6);
+  background: rgba(15, 23, 42, 0.8);
 }
 ::-webkit-scrollbar-thumb {
-  background: rgba(148, 163, 184, 0.5);
-  border-radius: 3px;
+  background: rgba(180, 190, 205, 0.8);
+  border-radius: 5px;
+  border: 1px solid rgba(226, 232, 240, 0.8);
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(100, 116, 139, 0.8);
+  background: rgba(245, 158, 11, 0.85); /* amber highlight on hover */
+}
+
+/* Explicit prominent horizontal scrollbar for data tables */
+.visible-table-scrollbar::-webkit-scrollbar {
+  height: 12px;
+  width: 8px;
+}
+.visible-table-scrollbar::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 6px;
+  border: 1px solid #e2e8f0;
+}
+.dark .visible-table-scrollbar::-webkit-scrollbar-track {
+  background: #0f172a;
+  border: 1px solid #1e293b;
+}
+.visible-table-scrollbar::-webkit-scrollbar-thumb {
+  background: #f59e0b; /* Amber distinct scroll thumb */
+  border-radius: 6px;
+  border: 2px solid #f8fafc;
+}
+.dark .visible-table-scrollbar::-webkit-scrollbar-thumb {
+  background: #d97706;
+  border: 2px solid #0f172a;
+}
+.visible-table-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #b45309;
 }

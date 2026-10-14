@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef } from 'react';
 import { 
   AlertOctagon, 
   TrendingDown, 
@@ -130,6 +130,17 @@ export const ActionTabs: React.FC<ActionTabsProps> = ({
 
   // Keyword copy tooltip state
   const [copiedKeyword, setCopiedKeyword] = useState<string | null>(null);
+
+  // Table scroll refs and smooth horizontal scroll handler
+  const bidTableRef = useRef<HTMLDivElement>(null);
+  const allTableRef = useRef<HTMLDivElement>(null);
+
+  const handleScrollTable = (ref: React.RefObject<HTMLDivElement | null>, direction: 'left' | 'right') => {
+    if (ref.current) {
+      const scrollAmount = direction === 'left' ? -380 : 380;
+      ref.current.scrollBy({ left: scrollAmount, behavior: 'smooth' });
+    }
+  };
 
   // Table Density & Font Size (User preferences saved in localStorage)
   const [density, setDensity] = useState<TableDensity>(() => {
@@ -864,91 +875,98 @@ export const ActionTabs: React.FC<ActionTabsProps> = ({
                 </button>
 
                 {isColVisMenuOpen && (
-                  <div className="absolute right-0 top-full mt-1.5 w-64 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-2xl p-3 z-30 space-y-2 animate-in fade-in">
-                    <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2">
-                      <span className="text-xs font-bold text-slate-900 dark:text-white">自定义展示列</span>
-                      <div className="flex items-center gap-2">
-                        <button
-                          onClick={() => handleResetColVis(true)}
-                          className="text-[10px] text-amber-600 hover:underline"
-                        >
-                          全部显示
-                        </button>
-                        <span>·</span>
-                        <button
-                          onClick={() => handleResetColVis(false)}
-                          className="text-[10px] text-blue-600 hover:underline"
-                        >
-                          精简模式
-                        </button>
-                        <span>·</span>
-                        <button
-                          onClick={() => setIsColVisMenuOpen(false)}
-                          className="text-[10px] text-slate-400 hover:text-slate-600"
-                        >
-                          完成
-                        </button>
+                  <>
+                    {/* Requirement 1: Click outside backdrop to automatically close popover */}
+                    <div 
+                      className="fixed inset-0 z-20 cursor-default" 
+                      onClick={() => setIsColVisMenuOpen(false)} 
+                    />
+                    <div className="absolute right-0 top-full mt-1.5 w-64 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-2xl p-3 z-30 space-y-2 animate-in fade-in">
+                      <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2">
+                        <span className="text-xs font-bold text-slate-900 dark:text-white">自定义展示列</span>
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => handleResetColVis(true)}
+                            className="text-[10px] text-amber-600 hover:underline"
+                          >
+                            全部显示
+                          </button>
+                          <span>·</span>
+                          <button
+                            onClick={() => handleResetColVis(false)}
+                            className="text-[10px] text-blue-600 hover:underline"
+                          >
+                            精简模式
+                          </button>
+                          <span>·</span>
+                          <button
+                            onClick={() => setIsColVisMenuOpen(false)}
+                            className="text-[10px] text-slate-400 hover:text-slate-600"
+                          >
+                            完成
+                          </button>
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-2 text-xs py-1 max-h-60 overflow-y-auto">
+                        <label className="flex items-center gap-1.5 cursor-pointer">
+                          <input type="checkbox" checked={colVis.matchType} onChange={() => toggleColumn('matchType')} className="rounded text-amber-500 focus:ring-amber-400" />
+                          <span>匹配类型</span>
+                        </label>
+                        <label className="flex items-center gap-1.5 cursor-pointer">
+                          <input type="checkbox" checked={colVis.currentBid} onChange={() => toggleColumn('currentBid')} className="rounded text-amber-500 focus:ring-amber-400" />
+                          <span>原出价</span>
+                        </label>
+                        <label className="flex items-center gap-1.5 cursor-pointer">
+                          <input type="checkbox" checked={colVis.userCustomBid} onChange={() => toggleColumn('userCustomBid')} className="rounded text-amber-500 focus:ring-amber-400" />
+                          <span>最终出价</span>
+                        </label>
+                        <label className="flex items-center gap-1.5 cursor-pointer">
+                          <input type="checkbox" checked={colVis.amazonSuggested} onChange={() => toggleColumn('amazonSuggested')} className="rounded text-amber-500 focus:ring-amber-400" />
+                          <span>建议竞价区间</span>
+                        </label>
+                        <label className="flex items-center gap-1.5 cursor-pointer">
+                          <input type="checkbox" checked={colVis.impressions} onChange={() => toggleColumn('impressions')} className="rounded text-amber-500 focus:ring-amber-400" />
+                          <span>展示量 (曝光)</span>
+                        </label>
+                        <label className="flex items-center gap-1.5 cursor-pointer">
+                          <input type="checkbox" checked={colVis.clicks} onChange={() => toggleColumn('clicks')} className="rounded text-amber-500 focus:ring-amber-400" />
+                          <span>点击量</span>
+                        </label>
+                        <label className="flex items-center gap-1.5 cursor-pointer">
+                          <input type="checkbox" checked={colVis.ctr} onChange={() => toggleColumn('ctr')} className="rounded text-amber-500 focus:ring-amber-400" />
+                          <span>点击率 (CTR)</span>
+                        </label>
+                        <label className="flex items-center gap-1.5 cursor-pointer">
+                          <input type="checkbox" checked={colVis.cpc} onChange={() => toggleColumn('cpc')} className="rounded text-amber-500 focus:ring-amber-400" />
+                          <span>CPC</span>
+                        </label>
+                        <label className="flex items-center gap-1.5 cursor-pointer">
+                          <input type="checkbox" checked={colVis.spend} onChange={() => toggleColumn('spend')} className="rounded text-amber-500 focus:ring-amber-400" />
+                          <span>总成本 (花费)</span>
+                        </label>
+                        <label className="flex items-center gap-1.5 cursor-pointer">
+                          <input type="checkbox" checked={colVis.orders} onChange={() => toggleColumn('orders')} className="rounded text-amber-500 focus:ring-amber-400" />
+                          <span>购买量 (订单)</span>
+                        </label>
+                        <label className="flex items-center gap-1.5 cursor-pointer">
+                          <input type="checkbox" checked={colVis.sales} onChange={() => toggleColumn('sales')} className="rounded text-amber-500 focus:ring-amber-400" />
+                          <span>销售额</span>
+                        </label>
+                        <label className="flex items-center gap-1.5 cursor-pointer">
+                          <input type="checkbox" checked={colVis.acos} onChange={() => toggleColumn('acos')} className="rounded text-amber-500 focus:ring-amber-400" />
+                          <span>当前 ACOS</span>
+                        </label>
+                        <label className="flex items-center gap-1.5 cursor-pointer">
+                          <input type="checkbox" checked={colVis.roas} onChange={() => toggleColumn('roas')} className="rounded text-amber-500 focus:ring-amber-400" />
+                          <span>ROAS</span>
+                        </label>
+                        <label className="flex items-center gap-1.5 cursor-pointer">
+                          <input type="checkbox" checked={colVis.reason} onChange={() => toggleColumn('reason')} className="rounded text-amber-500 focus:ring-amber-400" />
+                          <span>调价依据与建议</span>
+                        </label>
                       </div>
                     </div>
-                    <div className="grid grid-cols-2 gap-2 text-xs py-1 max-h-60 overflow-y-auto">
-                      <label className="flex items-center gap-1.5 cursor-pointer">
-                        <input type="checkbox" checked={colVis.matchType} onChange={() => toggleColumn('matchType')} className="rounded text-amber-500 focus:ring-amber-400" />
-                        <span>匹配类型</span>
-                      </label>
-                      <label className="flex items-center gap-1.5 cursor-pointer">
-                        <input type="checkbox" checked={colVis.currentBid} onChange={() => toggleColumn('currentBid')} className="rounded text-amber-500 focus:ring-amber-400" />
-                        <span>原出价</span>
-                      </label>
-                      <label className="flex items-center gap-1.5 cursor-pointer">
-                        <input type="checkbox" checked={colVis.userCustomBid} onChange={() => toggleColumn('userCustomBid')} className="rounded text-amber-500 focus:ring-amber-400" />
-                        <span>最终出价</span>
-                      </label>
-                      <label className="flex items-center gap-1.5 cursor-pointer">
-                        <input type="checkbox" checked={colVis.amazonSuggested} onChange={() => toggleColumn('amazonSuggested')} className="rounded text-amber-500 focus:ring-amber-400" />
-                        <span>建议竞价区间</span>
-                      </label>
-                      <label className="flex items-center gap-1.5 cursor-pointer">
-                        <input type="checkbox" checked={colVis.impressions} onChange={() => toggleColumn('impressions')} className="rounded text-amber-500 focus:ring-amber-400" />
-                        <span>展示量 (曝光)</span>
-                      </label>
-                      <label className="flex items-center gap-1.5 cursor-pointer">
-                        <input type="checkbox" checked={colVis.clicks} onChange={() => toggleColumn('clicks')} className="rounded text-amber-500 focus:ring-amber-400" />
-                        <span>点击量</span>
-                      </label>
-                      <label className="flex items-center gap-1.5 cursor-pointer">
-                        <input type="checkbox" checked={colVis.ctr} onChange={() => toggleColumn('ctr')} className="rounded text-amber-500 focus:ring-amber-400" />
-                        <span>点击率 (CTR)</span>
-                      </label>
-                      <label className="flex items-center gap-1.5 cursor-pointer">
-                        <input type="checkbox" checked={colVis.cpc} onChange={() => toggleColumn('cpc')} className="rounded text-amber-500 focus:ring-amber-400" />
-                        <span>CPC</span>
-                      </label>
-                      <label className="flex items-center gap-1.5 cursor-pointer">
-                        <input type="checkbox" checked={colVis.spend} onChange={() => toggleColumn('spend')} className="rounded text-amber-500 focus:ring-amber-400" />
-                        <span>总成本 (花费)</span>
-                      </label>
-                      <label className="flex items-center gap-1.5 cursor-pointer">
-                        <input type="checkbox" checked={colVis.orders} onChange={() => toggleColumn('orders')} className="rounded text-amber-500 focus:ring-amber-400" />
-                        <span>购买量 (订单)</span>
-                      </label>
-                      <label className="flex items-center gap-1.5 cursor-pointer">
-                        <input type="checkbox" checked={colVis.sales} onChange={() => toggleColumn('sales')} className="rounded text-amber-500 focus:ring-amber-400" />
-                        <span>销售额</span>
-                      </label>
-                      <label className="flex items-center gap-1.5 cursor-pointer">
-                        <input type="checkbox" checked={colVis.acos} onChange={() => toggleColumn('acos')} className="rounded text-amber-500 focus:ring-amber-400" />
-                        <span>当前 ACOS</span>
-                      </label>
-                      <label className="flex items-center gap-1.5 cursor-pointer">
-                        <input type="checkbox" checked={colVis.roas} onChange={() => toggleColumn('roas')} className="rounded text-amber-500 focus:ring-amber-400" />
-                        <span>ROAS</span>
-                      </label>
-                      <label className="flex items-center gap-1.5 cursor-pointer">
-                        <input type="checkbox" checked={colVis.reason} onChange={() => toggleColumn('reason')} className="rounded text-amber-500 focus:ring-amber-400" />
-                        <span>调价依据与建议</span>
-                      </label>
-                    </div>
-                  </div>
+                  </>
                 )}
               </div>
 
@@ -975,10 +993,13 @@ export const ActionTabs: React.FC<ActionTabsProps> = ({
             />
           </div>
 
-          {/* Table Container - supports smooth horizontal scrolling when columns are many or font is large */}
-          <div className="overflow-x-auto border border-slate-200 dark:border-slate-800 rounded-xl shadow-sm">
+          {/* Table Container - supports smooth vertical & horizontal scrolling with sticky header */}
+          <div 
+            ref={bidTableRef}
+            className="max-h-[600px] 2xl:max-h-[720px] overflow-y-auto overflow-x-auto border border-slate-200 dark:border-slate-800 rounded-xl shadow-sm visible-table-scrollbar relative"
+          >
             <table className={`w-full text-left ${fontSizeClass} text-slate-600 dark:text-slate-300 whitespace-nowrap`}>
-              <thead className="bg-slate-100 dark:bg-slate-950/80 text-slate-600 dark:text-slate-400 uppercase text-[11px] font-semibold border-b border-slate-200 dark:border-slate-800">
+              <thead className="sticky top-0 z-10 bg-slate-100 dark:bg-slate-950 text-slate-700 dark:text-slate-300 uppercase text-[11px] font-bold border-b border-slate-300 dark:border-slate-700 shadow-sm">
                 <tr>
                   {/* Requirement 1: Header Select All Checkbox (图一位置) */}
                   <th className={`${cellPadding} w-10 text-center select-none`}>
@@ -1217,6 +1238,32 @@ export const ActionTabs: React.FC<ActionTabsProps> = ({
               </tbody>
             </table>
           </div>
+
+          {/* Requirement 2: Horizontal Scroll Navigation Bar (底部明显左右滑动控制与提示) */}
+          <div className="flex flex-wrap items-center justify-between px-3.5 py-2.5 bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800 rounded-xl text-xs gap-2">
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => handleScrollTable(bidTableRef, 'left')}
+                className="px-3 py-1.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-700 dark:text-slate-300 hover:text-amber-600 hover:border-amber-400 transition flex items-center gap-1 font-semibold shadow-sm active:scale-95"
+                title="向左平移查看左侧指标"
+              >
+                <span>⬅️ 向左滑动</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => handleScrollTable(bidTableRef, 'right')}
+                className="px-3 py-1.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-700 dark:text-slate-300 hover:text-amber-600 hover:border-amber-400 transition flex items-center gap-1 font-semibold shadow-sm active:scale-95"
+                title="向右平移查看右侧指标"
+              >
+                <span>向右滑动 ➡️</span>
+              </button>
+            </div>
+            <div className="flex items-center gap-2 text-slate-500 dark:text-slate-400 text-[11px]">
+              <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
+              <span>💡 提示：可直接拖动上方显眼的金色横向滚动条，或按键盘 <kbd className="px-1.5 py-0.5 bg-white dark:bg-slate-800 border rounded font-mono text-[10px]">Shift</kbd> + 滚轮平滑横移查看全部 15 项数据</span>
+            </div>
+          </div>
         </div>
       )}
 
@@ -1249,9 +1296,9 @@ export const ActionTabs: React.FC<ActionTabsProps> = ({
             </div>
           </div>
 
-          <div className="overflow-x-auto border border-slate-200 dark:border-slate-800 rounded-xl shadow-sm">
+          <div className="max-h-[600px] 2xl:max-h-[720px] overflow-y-auto overflow-x-auto border border-slate-200 dark:border-slate-800 rounded-xl shadow-sm visible-table-scrollbar relative">
             <table className={`w-full text-left ${fontSizeClass} text-slate-600 dark:text-slate-300 whitespace-nowrap`}>
-              <thead className="bg-slate-100 dark:bg-slate-950/80 text-slate-600 dark:text-slate-400 uppercase text-[11px] font-semibold border-b border-slate-200 dark:border-slate-800">
+              <thead className="sticky top-0 z-10 bg-slate-100 dark:bg-slate-950 text-slate-700 dark:text-slate-300 uppercase text-[11px] font-bold border-b border-slate-300 dark:border-slate-700 shadow-sm">
                 <tr>
                   <th className={`${cellPadding} w-10 text-center`}>状态</th>
                   <th className={cellPadding}>搜索词 / 投放 ASIN</th>
@@ -1339,9 +1386,9 @@ export const ActionTabs: React.FC<ActionTabsProps> = ({
             </span>
           </div>
 
-          <div className="overflow-x-auto border border-slate-200 dark:border-slate-800 rounded-xl shadow-sm">
+          <div className="max-h-[600px] 2xl:max-h-[720px] overflow-y-auto overflow-x-auto border border-slate-200 dark:border-slate-800 rounded-xl shadow-sm visible-table-scrollbar relative">
             <table className={`w-full text-left ${fontSizeClass} text-slate-600 dark:text-slate-300 whitespace-nowrap`}>
-              <thead className="bg-slate-100 dark:bg-slate-950/80 text-slate-600 dark:text-slate-400 uppercase text-[11px] font-semibold border-b border-slate-200 dark:border-slate-800">
+              <thead className="sticky top-0 z-10 bg-slate-100 dark:bg-slate-950 text-slate-700 dark:text-slate-300 uppercase text-[11px] font-bold border-b border-slate-300 dark:border-slate-700 shadow-sm">
                 <tr>
                   <th className={cellPadding}>优质搜索词</th>
                   <th className={cellPadding}>原匹配类型</th>
@@ -1429,9 +1476,12 @@ export const ActionTabs: React.FC<ActionTabsProps> = ({
             </div>
           </div>
 
-          <div className="overflow-x-auto border border-slate-200 dark:border-slate-800 rounded-xl shadow-sm">
+          <div 
+            ref={allTableRef}
+            className="max-h-[600px] 2xl:max-h-[720px] overflow-y-auto overflow-x-auto border border-slate-200 dark:border-slate-800 rounded-xl shadow-sm visible-table-scrollbar relative"
+          >
             <table className={`w-full text-left ${fontSizeClass} text-slate-600 dark:text-slate-300 whitespace-nowrap`}>
-              <thead className="bg-slate-100 dark:bg-slate-950/80 text-slate-600 dark:text-slate-400 uppercase text-[11px] font-semibold border-b border-slate-200 dark:border-slate-800">
+              <thead className="sticky top-0 z-10 bg-slate-100 dark:bg-slate-950 text-slate-700 dark:text-slate-300 uppercase text-[11px] font-bold border-b border-slate-300 dark:border-slate-700 shadow-sm">
                 <tr>
                   <th className={cellPadding}>关键词 / 投放</th>
                   <th className={cellPadding}>投放匹配类型</th>
@@ -1556,6 +1606,32 @@ export const ActionTabs: React.FC<ActionTabsProps> = ({
                 })}
               </tbody>
             </table>
+          </div>
+
+          {/* Requirement 2: Horizontal Scroll Navigation Bar for Tab 4 (全量列表底部明显左右滑动控制与提示) */}
+          <div className="flex flex-wrap items-center justify-between px-3.5 py-2.5 bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800 rounded-xl text-xs gap-2">
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => handleScrollTable(allTableRef, 'left')}
+                className="px-3 py-1.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-700 dark:text-slate-300 hover:text-amber-600 hover:border-amber-400 transition flex items-center gap-1 font-semibold shadow-sm active:scale-95"
+                title="向左平移查看左侧指标"
+              >
+                <span>⬅️ 向左滑动</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => handleScrollTable(allTableRef, 'right')}
+                className="px-3 py-1.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-700 dark:text-slate-300 hover:text-amber-600 hover:border-amber-400 transition flex items-center gap-1 font-semibold shadow-sm active:scale-95"
+                title="向右平移查看右侧指标"
+              >
+                <span>向右滑动 ➡️</span>
+              </button>
+            </div>
+            <div className="flex items-center gap-2 text-slate-500 dark:text-slate-400 text-[11px]">
+              <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
+              <span>💡 提示：可直接拖动上方显眼的金色横向滚动条，或按键盘 <kbd className="px-1.5 py-0.5 bg-white dark:bg-slate-800 border rounded font-mono text-[10px]">Shift</kbd> + 滚轮平滑横移查看全部 16 列数据</span>
+            </div>
           </div>
         </div>
       )}

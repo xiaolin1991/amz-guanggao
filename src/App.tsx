@@ -8,7 +8,7 @@ import {
 } from './types/amazon';
 import { parseAmazonExcel, ParseResult } from './utils/amazonBulkParser';
 import { runOptimizationDiagnosis } from './utils/optimizerEngine';
-import { exportUpdatedBulkFile } from './utils/bulkExporter';
+import { exportUpdatedBulkFile, exportAuditReviewFile } from './utils/bulkExporter';
 import { 
   HistoryRecord, 
   saveHistoryReport, 
@@ -337,9 +337,25 @@ export const App: React.FC = () => {
     setCustomBidOverrides(map);
   };
 
-  // Export
+  // Check if loaded file is standard Amazon Bulk format (has Product/Entity/Operation columns)
+  const isRealBulkFormat = useMemo(() => {
+    if (!parseResult || !parseResult.rawRows || parseResult.rawRows.length === 0) return true;
+    const firstRow = parseResult.rawRows[0];
+    const keys = Object.keys(firstRow).map(k => k.trim().toLowerCase());
+    const hasProduct = keys.some(k => k === 'product' || k === '产品');
+    const hasEntity = keys.some(k => k === 'entity' || k === '实体' || k === '实体层级');
+    const hasOperation = keys.some(k => k === 'operation' || k === '操作');
+    return hasProduct && hasEntity && hasOperation;
+  }, [parseResult]);
+
+  // Export standard Amazon file
   const handleExport = () => {
     exportUpdatedBulkFile(parseResult, bidActions, negativeActions, harvestActions);
+  };
+
+  // Export internal review audit report
+  const handleExportReview = () => {
+    exportAuditReviewFile(bidActions, negativeActions, harvestActions);
   };
 
   return (
@@ -397,6 +413,25 @@ export const App: React.FC = () => {
               </div>
             </div>
 
+            {/* Non-Bulk (Targeting CSV) Warm Guidance Banner */}
+            {!isRealBulkFormat && (
+              <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-300 dark:border-amber-800/50 rounded-xl p-3 text-xs text-amber-800 dark:text-amber-300 flex items-start gap-2.5 shadow-sm">
+                <span className="text-base flex-shrink-0">💡</span>
+                <div className="flex-1 leading-relaxed">
+                  <strong>报表格式提示：</strong>您当前导入的是广告管理【投放明细 Targeting 报表】。工具已为您完成全量出价诊断与计算！
+                  <span className="text-slate-600 dark:text-slate-300 ml-1">
+                    由于此类报表缺少亚马逊系统内部的数字 Keyword ID，如需在亚马逊【批量操作 (Bulk Operations)】一键上传自动生效，请从广告后台批量操作下载 30/60 天官方 Bulk 表格。
+                  </span>
+                  <button
+                    onClick={() => setIsTutorialOpen(true)}
+                    className="ml-1 text-blue-600 dark:text-blue-400 font-bold underline hover:text-blue-500"
+                  >
+                    👉 1分钟下载官方 Bulk 表教程
+                  </button>
+                </div>
+              </div>
+            )}
+
             {/* Config Control Bar */}
             <ConfigBar config={config} onChange={setConfig} />
 
@@ -428,6 +463,7 @@ export const App: React.FC = () => {
               negativeActions={negativeActions}
               harvestActions={harvestActions}
               onExport={handleExport}
+              onExportReview={handleExportReview}
               onOpenTutorial={() => setIsTutorialOpen(true)}
             />
           </>
