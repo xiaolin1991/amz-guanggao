@@ -38,8 +38,8 @@ export const FileUploader: React.FC<FileUploaderProps> = ({
     <div className="max-w-4xl mx-auto py-10 px-4">
       {/* Privacy Guarantee Pill */}
       <div className="flex justify-center mb-6">
-        <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-slate-900 border border-slate-800 text-xs text-slate-300 shadow-md">
-          <ShieldCheck className="w-4 h-4 text-emerald-400" />
+        <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-xs text-slate-600 dark:text-slate-300 shadow-sm">
+          <ShieldCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
           <span>数据在本地浏览器沙盒内存中完成解析，<strong>绝不向任何外部服务器上传</strong>您的店铺与广告数据</span>
         </div>
       </div>
@@ -55,8 +55,8 @@ export const FileUploader: React.FC<FileUploaderProps> = ({
         onClick={() => fileInputRef.current?.click()}
         className={`relative border-2 border-dashed rounded-3xl p-12 text-center transition cursor-pointer group ${
           isDragOver
-            ? 'border-amber-400 bg-amber-500/5'
-            : 'border-slate-700 hover:border-slate-500 bg-slate-900/60 hover:bg-slate-900/90'
+            ? 'border-amber-500 bg-amber-50 dark:bg-amber-500/5'
+            : 'border-slate-300 dark:border-slate-700 hover:border-slate-400 dark:hover:border-slate-500 bg-white dark:bg-slate-900/60 hover:bg-slate-50 dark:hover:bg-slate-900/90 shadow-sm'
         }`}
       >
         <input
@@ -72,25 +72,25 @@ export const FileUploader: React.FC<FileUploaderProps> = ({
         />
 
         <div className="flex flex-col items-center">
-          <div className="w-20 h-20 rounded-2xl bg-amber-500/10 text-amber-400 flex items-center justify-center mb-5 group-hover:scale-105 transition border border-amber-500/20">
+          <div className="w-20 h-20 rounded-2xl bg-amber-50 dark:bg-amber-500/10 text-amber-500 dark:text-amber-400 flex items-center justify-center mb-5 group-hover:scale-105 transition border border-amber-200 dark:border-amber-500/20">
             {isLoading ? (
-              <div className="w-8 h-8 border-3 border-amber-400 border-t-transparent rounded-full animate-spin" />
+              <div className="w-8 h-8 border-3 border-amber-500 border-t-transparent rounded-full animate-spin" />
             ) : (
               <UploadCloud className="w-10 h-10" />
             )}
           </div>
 
-          <h3 className="text-xl font-bold text-white mb-2">
-            拖拽亚马逊广告报表到这里，或 <span className="text-amber-400 underline decoration-amber-400/50 underline-offset-4">点击浏览选择</span>
+          <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-2">
+            拖拽亚马逊广告报表到这里，或 <span className="text-amber-600 dark:text-amber-400 underline decoration-amber-500/50 underline-offset-4">点击浏览选择</span>
           </h3>
           
-          <p className="text-sm text-slate-400 max-w-md mx-auto mb-6">
-            支持亚马逊官方导出的 <strong className="text-slate-200">批量操作表（Bulk Operations .xlsx）</strong> 以及 <strong className="text-slate-200">搜索词报表（Search Term Report）</strong>
+          <p className="text-sm text-slate-500 dark:text-slate-400 max-w-md mx-auto mb-6">
+            支持亚马逊官方导出的 <strong className="text-slate-800 dark:text-slate-200">批量操作表（Bulk Operations .xlsx）</strong> 以及 <strong className="text-slate-800 dark:text-slate-200">搜索词报表（Search Term Report）</strong>
           </p>
 
-          <div className="flex flex-wrap items-center justify-center gap-3 text-xs text-slate-500">
-            <span className="flex items-center gap-1">
-              <FileSpreadsheet className="w-4 h-4 text-emerald-400" /> 支持 .xlsx, .xls, .csv
+          <div className="flex flex-wrap items-center justify-center gap-3 text-xs text-slate-400 dark:text-slate-500">
+            <span className="flex items-center gap-1 text-slate-600 dark:text-slate-400">
+              <FileSpreadsheet className="w-4 h-4 text-emerald-600 dark:text-emerald-400" /> 支持 .xlsx, .xls, .csv
             </span>
             <span>·</span>
             <span>中英文报表自适应解析</span>
@@ -101,8 +101,8 @@ export const FileUploader: React.FC<FileUploaderProps> = ({
       </div>
 
       {/* Demo Data Option */}
-      <div className="mt-8 text-center bg-slate-900/40 border border-slate-800 rounded-2xl p-6">
-        <h4 className="text-sm font-semibold text-slate-300 mb-1">
+      <div className="mt-8 text-center bg-white dark:bg-slate-900/40 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-sm">
+        <h4 className="text-sm font-semibold text-slate-800 dark:text-slate-300 mb-1">
           手头还没有下载报表？
         </h4>
         <p className="text-xs text-slate-500 mb-4">
@@ -110,7 +110,7 @@ export const FileUploader: React.FC<FileUploaderProps> = ({
         </p>
         <button
           onClick={onLoadDemo}
-          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-sm transition shadow-lg shadow-amber-500/20 active:scale-95"
+          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-sm transition shadow-md shadow-amber-500/20 active:scale-95"
         >
           <Sparkles className="w-4 h-4" />
           一键载入演示数据 (Demo 体验)

@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { 
   OptimizerConfig, 
   NormalizedAdItem, 
@@ -20,6 +20,26 @@ import { ActionTabs } from './components/ActionTabs';
 import { ExportBar } from './components/ExportBar';
 
 export const App: React.FC = () => {
+  // Theme state: defaults to 'light' (pure white & soft clean slate), switchable to 'dark' for night
+  const [theme, setTheme] = useState<'light' | 'dark'>(() => {
+    const saved = localStorage.getItem('amz_theme');
+    return saved === 'dark' ? 'dark' : 'light'; // default 'light'
+  });
+
+  useEffect(() => {
+    localStorage.setItem('amz_theme', theme);
+    const root = document.documentElement;
+    if (theme === 'dark') {
+      root.classList.add('dark');
+    } else {
+      root.classList.remove('dark');
+    }
+  }, [theme]);
+
+  const handleToggleTheme = () => {
+    setTheme(prev => (prev === 'light' ? 'dark' : 'light'));
+  };
+
   const [config, setConfig] = useState<OptimizerConfig>({
     targetAcos: 28,
     zeroOrderClickThreshold: 10,
@@ -185,13 +205,15 @@ export const App: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-slate-950 text-slate-100 pb-28">
+    <div className="min-h-screen flex flex-col bg-slate-100 dark:bg-slate-950 text-slate-800 dark:text-slate-100 pb-28 transition-colors">
       {/* Top Header */}
       <Header
         onOpenTutorial={() => setIsTutorialOpen(true)}
         onLoadDemo={handleLoadDemo}
         onReset={handleReset}
         hasData={items.length > 0}
+        theme={theme}
+        onToggleTheme={handleToggleTheme}
       />
 
       {/* Main Content */}
@@ -205,16 +227,16 @@ export const App: React.FC = () => {
         ) : (
           <>
             {/* File Info Bar */}
-            <div className="flex items-center justify-between bg-slate-900/60 border border-slate-800 rounded-xl px-4 py-2.5 text-xs">
+            <div className="flex items-center justify-between bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2.5 text-xs shadow-sm transition-colors">
               <div className="flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                <span className="text-slate-400">当前已载入报表：</span>
-                <span className="font-semibold text-white">{fileName}</span>
-                <span className="text-slate-500">（共计识别 {items.length} 条广告投放数据）</span>
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                <span className="text-slate-500 dark:text-slate-400">当前已载入报表：</span>
+                <span className="font-semibold text-slate-800 dark:text-white">{fileName}</span>
+                <span className="text-slate-400 dark:text-slate-500">（共计识别 {items.length} 条广告投放数据）</span>
               </div>
               <button
                 onClick={() => setIsTutorialOpen(true)}
-                className="text-amber-400 hover:text-amber-300 underline underline-offset-2 flex items-center gap-1"
+                className="text-amber-600 dark:text-amber-400 hover:text-amber-500 underline underline-offset-2 flex items-center gap-1 font-medium"
               >
                 如何上传回亚马逊后台？
               </button>
