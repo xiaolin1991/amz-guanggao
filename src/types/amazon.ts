@@ -63,7 +63,7 @@ export interface OptimizerConfig {
 export interface BidAdjustmentAction {
   id: string;
   item: NormalizedAdItem;
-  type: 'decrease_bid' | 'increase_bid' | 'pause';
+  type: 'decrease_bid' | 'increase_bid' | 'zero_impression_boost' | 'pause';
   currentBid: number;
   suggestedBid: number;
   bidChangePercent: number;
@@ -117,6 +117,7 @@ export interface DiagnosisSummary {
   
   // Actions count
   highAcosItemsCount: number;
+  zeroImpressionItemsCount: number;
   harvestItemsCount: number;
   potentialMonthlySavings: number;
 }

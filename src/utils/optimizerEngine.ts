@@ -54,11 +54,11 @@ export function runOptimizationDiagnosis(
         wastedSpend: Number(item.spend.toFixed(2)),
         clicks: item.clicks,
         reason: `点击 ${item.clicks} 次，白白烧掉 $${item.spend.toFixed(2)}，至今 0 转化，属于典型吸血流量`,
-        selected: true
+        selected: true // Negative default selected for urgent bleeding
       });
     }
 
-    // 2. Check for High ACOS items -> Bid Decrease
+    // 2. Check for High ACOS items -> Bid Decrease (DEFAULT UNCHECKED per user requirement)
     if (item.orders > 0 && item.acos > config.targetAcos) {
       const baseBid = item.currentBid > 0 ? item.currentBid : (item.cpc > 0 ? item.cpc : 0.75);
       
@@ -74,19 +74,19 @@ export function runOptimizationDiagnosis(
       if (roundedBid < baseBid) {
         const diffPercent = Number((((roundedBid - baseBid) / baseBid) * 100).toFixed(1));
         bidActions.push({
-          id: `bid_${item.id}_${item.originalRowIndex}`,
+          id: `bid_dec_${item.id}_${item.originalRowIndex}`,
           item,
           type: 'decrease_bid',
           currentBid: baseBid,
           suggestedBid: roundedBid,
           bidChangePercent: diffPercent,
-          reason: `当前 ACOS ${item.acos}% 严重超标 (目标 ${config.targetAcos}%)，建议下调出价至 $${roundedBid} 强行扭亏`,
-          selected: true
+          reason: `当前 ACOS ${item.acos}% 超出目标 (${config.targetAcos}%)，系统保本参考价为 $${roundedBid}`,
+          selected: false // Default unchecked! Avoid accidental adjustments
         });
       }
     }
 
-    // 3. Check for Low ACOS Winners with room to expand
+    // 3. Check for Low ACOS Winners with room to expand (DEFAULT UNCHECKED)
     if (item.orders >= 2 && item.acos > 0 && item.acos <= config.targetAcos * 0.7) {
       const baseBid = item.currentBid > 0 ? item.currentBid : (item.cpc > 0 ? item.cpc : 0.75);
       const suggestedBid = Number(Math.min(baseBid * 1.15, baseBid + 0.35).toFixed(2));
@@ -99,12 +99,37 @@ export function runOptimizationDiagnosis(
         currentBid: baseBid,
         suggestedBid: suggestedBid,
         bidChangePercent: diffPercent,
-        reason: `高转化优质词 (ACOS 仅 ${item.acos}%)，建议提价 15% 抢占首页顶部首位，扩大战果`,
-        selected: false // unchecked by default, seller can choose to boost
+        reason: `高转化优质词 (ACOS 仅 ${item.acos}%)，建议提价 15% 抢占首页顶部首位`,
+        selected: false // Default unchecked!
       });
     }
 
-    // 4. Check for Search Term Harvesting (拓词提炼)
+    // 4. Check for 0/Low Impression Keywords -> Boost Recommendation (DEFAULT UNCHECKED)
+    if (item.clicks === 0 && item.spend === 0 && item.impressions <= 25) {
+      const baseBid = item.currentBid > 0 ? item.currentBid : 0.50;
+      let suggestedBid = baseBid;
+      if (item.suggestedBidMed && item.suggestedBidMed > baseBid) {
+        suggestedBid = item.suggestedBidMed;
+      } else {
+        suggestedBid = Number((baseBid + 0.10).toFixed(2));
+      }
+      const diffPercent = Number((((suggestedBid - baseBid) / baseBid) * 100).toFixed(1));
+
+      bidActions.push({
+        id: `bid_zero_${item.id}_${item.originalRowIndex}`,
+        item,
+        type: 'zero_impression_boost',
+        currentBid: baseBid,
+        suggestedBid: suggestedBid,
+        bidChangePercent: diffPercent,
+        reason: item.impressions === 0 
+          ? '0曝光未激活：出价可能过低未获得展示机会，建议微提竞价或参考亚马逊建议中位价放量测试'
+          : `曝光极低 (${item.impressions}次展示)：出价偏低未能拿足展示量，建议小幅提价测试放量`,
+        selected: false // Default unchecked!
+      });
+    }
+
+    // 5. Check for Search Term Harvesting (拓词提炼)
     if (config.autoHarvestExact && item.orders >= config.harvestMinOrders && item.acos <= config.targetAcos) {
       const matchLower = item.matchType.toLowerCase();
       const isBroadOrPhrase = matchLower.includes('broad') || matchLower.includes('phrase') || matchLower.includes('广泛') || matchLower.includes('词组') || matchLower.includes('auto');
@@ -132,7 +157,7 @@ export function runOptimizationDiagnosis(
   const wastedSpendPercent = totalSpend > 0 ? Number(((wastedSpend / totalSpend) * 100).toFixed(1)) : 0;
   const averageCpc = totalClicks > 0 ? Number((totalSpend / totalClicks).toFixed(2)) : 0;
 
-  // Potential Monthly Savings: all selected wasted spend + 30% reduction on overspending keywords
+  // Potential Monthly Savings
   const potentialMonthlySavings = Number((
     negativeActions.reduce((acc, curr) => acc + curr.wastedSpend, 0) * 0.85 +
     bidActions.filter(b => b.type === 'decrease_bid').reduce((acc, curr) => acc + (curr.item.spend * 0.25), 0)
@@ -149,6 +174,7 @@ export function runOptimizationDiagnosis(
     wastedSpendPercent,
     bleedingKeywordsCount: negativeActions.length,
     highAcosItemsCount: bidActions.filter(b => b.type === 'decrease_bid').length,
+    zeroImpressionItemsCount: bidActions.filter(b => b.type === 'zero_impression_boost').length,
     harvestItemsCount: harvestActions.length,
     potentialMonthlySavings
   };

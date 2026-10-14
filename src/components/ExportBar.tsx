@@ -38,7 +38,7 @@ export const ExportBar: React.FC<ExportBarProps> = ({
               </span>
             </div>
             <div className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 flex items-center gap-2">
-              <span>包含 <strong className="text-slate-700 dark:text-slate-300">{selectedBidsCount}</strong> 个词降价控本</span>
+              <span>包含 <strong className="text-slate-700 dark:text-slate-300">{selectedBidsCount}</strong> 个关键词出价调整</span>
               <span>·</span>
               <span><strong className="text-slate-700 dark:text-slate-300">{selectedNegativesCount}</strong> 个吸血词精准否定止血</span>
             </div>

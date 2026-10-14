@@ -119,7 +119,7 @@ export const MetricsDashboard: React.FC<MetricsDashboardProps> = ({ summary, con
 
       {/* Actionable Insights banner */}
       <div className="bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 rounded-xl p-4 flex flex-wrap items-center justify-between gap-4 text-xs transition-colors">
-        <div className="flex items-center gap-2 text-slate-600 dark:text-slate-300">
+        <div className="flex flex-wrap items-center gap-2 text-slate-600 dark:text-slate-300">
           <span className="font-semibold text-slate-900 dark:text-white">诊断结果简报：</span>
           <span>系统发现</span>
           <span className="px-2 py-0.5 rounded bg-rose-50 dark:bg-rose-500/20 text-rose-700 dark:text-rose-300 font-semibold border border-rose-200 dark:border-rose-500/30">
@@ -129,11 +129,19 @@ export const MetricsDashboard: React.FC<MetricsDashboardProps> = ({ summary, con
           <span className="px-2 py-0.5 rounded bg-amber-50 dark:bg-amber-500/20 text-amber-700 dark:text-amber-300 font-semibold border border-amber-200 dark:border-amber-500/30">
             {summary.highAcosItemsCount} 个超标词
           </span>
-          <span>需要动态下调出价，</span>
+          <span>建议降低出价，</span>
+          {summary.zeroImpressionItemsCount > 0 && (
+            <>
+              <span className="px-2 py-0.5 rounded bg-blue-50 dark:bg-blue-500/20 text-blue-700 dark:text-blue-300 font-semibold border border-blue-200 dark:border-blue-500/30">
+                {summary.zeroImpressionItemsCount} 个0/低曝光词
+              </span>
+              <span>建议提价激活，</span>
+            </>
+          )}
           <span className="px-2 py-0.5 rounded bg-emerald-50 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 font-semibold border border-emerald-200 dark:border-emerald-500/30">
             {summary.harvestItemsCount} 个黄金词
           </span>
-          <span>建议新建精准广告组。</span>
+          <span>建议新建精准组。</span>
         </div>
         <div className="text-slate-500 dark:text-slate-400 text-xs">
           平均每次点击费用 (CPC): <strong className="text-slate-700 dark:text-slate-200">${summary.averageCpc}</strong> · 总点击: <strong className="text-slate-700 dark:text-slate-200">{summary.totalClicks.toLocaleString()}</strong>

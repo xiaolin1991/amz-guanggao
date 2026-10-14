@@ -202,6 +202,7 @@ export const App: React.FC = () => {
           bleedingKeywordsCount: 0,
           highAcosItemsCount: 0,
           harvestItemsCount: 0,
+          zeroImpressionItemsCount: 0,
           potentialMonthlySavings: 0
         },
         baseBidActions: [] as BidAdjustmentAction[],
@@ -227,7 +228,7 @@ export const App: React.FC = () => {
         : action.selected,
       userCustomBid: customBidOverrides[action.id] !== undefined
         ? customBidOverrides[action.id]
-        : action.suggestedBid
+        : action.currentBid
     }));
   }, [baseBidActions, actionSelectionOverrides, customBidOverrides]);
 
@@ -295,11 +296,17 @@ export const App: React.FC = () => {
     setActionSelectionOverrides(newOverrides);
   };
 
-  const handleToggleAllBids = (selected: boolean) => {
+  const handleToggleAllBids = (selected: boolean, targetFilterIds?: string[]) => {
     const newOverrides = { ...actionSelectionOverrides };
-    bidActions.forEach(b => {
-      newOverrides[b.id] = selected;
-    });
+    if (targetFilterIds && targetFilterIds.length > 0) {
+      targetFilterIds.forEach(id => {
+        newOverrides[id] = selected;
+      });
+    } else {
+      bidActions.forEach(b => {
+        newOverrides[b.id] = selected;
+      });
+    }
     setActionSelectionOverrides(newOverrides);
   };
 
@@ -315,9 +322,18 @@ export const App: React.FC = () => {
     }));
   };
 
-  // Reset Bids to Algorithmic Suggested Bids
-  const handleResetBidsToSuggested = () => {
+  // Reset Bids to Original Bids (原出价/原竞价)
+  const handleResetBidsToOriginal = () => {
     setCustomBidOverrides({});
+  };
+
+  // Reset Bids to Algorithmic Suggested Bids (算法保本建议价)
+  const handleResetBidsToSuggested = () => {
+    const map: Record<string, number> = {};
+    bidActions.forEach(b => {
+      map[b.id] = b.suggestedBid;
+    });
+    setCustomBidOverrides(map);
   };
 
   // Export
@@ -399,6 +415,7 @@ export const App: React.FC = () => {
               onToggleAllBids={handleToggleAllBids}
               onCustomBidChange={handleCustomBidChange}
               onBatchApplyBids={handleBatchApplyBids}
+              onResetBidsToOriginal={handleResetBidsToOriginal}
               onResetBidsToSuggested={handleResetBidsToSuggested}
               isFullWidth={isFullWidth}
               onToggleFullWidth={() => setIsFullWidth(!isFullWidth)}
