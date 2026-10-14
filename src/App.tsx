@@ -26,6 +26,12 @@ export const App: React.FC = () => {
     return saved === 'dark' ? 'dark' : 'light'; // default 'light'
   });
 
+  // Full-width mode state: defaults to true for wide screen table view
+  const [isFullWidth, setIsFullWidth] = useState<boolean>(() => {
+    const saved = localStorage.getItem('amz_full_width');
+    return saved !== null ? saved === 'true' : true; // default true (wide screen mode)
+  });
+
   useEffect(() => {
     localStorage.setItem('amz_theme', theme);
     const root = document.documentElement;
@@ -35,6 +41,10 @@ export const App: React.FC = () => {
       root.classList.remove('dark');
     }
   }, [theme]);
+
+  useEffect(() => {
+    localStorage.setItem('amz_full_width', String(isFullWidth));
+  }, [isFullWidth]);
 
   const handleToggleTheme = () => {
     setTheme(prev => (prev === 'light' ? 'dark' : 'light'));
@@ -63,7 +73,7 @@ export const App: React.FC = () => {
   const handleFileLoaded = (buffer: ArrayBuffer, name: string) => {
     setIsLoading(true);
     try {
-      const result = parseAmazonExcel(buffer);
+      const result = parseAmazonExcel(buffer, name);
       setParseResult(result);
       setItems(result.items);
       setFileName(name);
@@ -217,7 +227,9 @@ export const App: React.FC = () => {
       />
 
       {/* Main Content */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+      <main className={`flex-1 w-full mx-auto px-3 sm:px-6 py-6 space-y-6 transition-all duration-300 ${
+        isFullWidth ? 'max-w-[99%]' : 'max-w-[95%] 2xl:max-w-[1700px]'
+      }`}>
         {items.length === 0 ? (
           <FileUploader
             onFileLoaded={handleFileLoaded}
@@ -227,19 +239,23 @@ export const App: React.FC = () => {
         ) : (
           <>
             {/* File Info Bar */}
-            <div className="flex items-center justify-between bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2.5 text-xs shadow-sm transition-colors">
+            <div className="flex flex-wrap items-center justify-between bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2.5 text-xs shadow-sm transition-colors gap-2">
               <div className="flex items-center gap-2">
                 <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                <span className="text-slate-500 dark:text-slate-400">当前已载入报表：</span>
-                <span className="font-semibold text-slate-800 dark:text-white">{fileName}</span>
-                <span className="text-slate-400 dark:text-slate-500">（共计识别 {items.length} 条广告投放数据）</span>
+                <span className="text-slate-500 dark:text-slate-400">已载入广告报表：</span>
+                <span className="font-semibold text-slate-900 dark:text-white">{fileName}</span>
+                <span className="text-slate-500 dark:text-slate-400">
+                  （共识别 {items.length} 个投放词/Targeting，包含 {items.filter(i => i.clicks > 0 || i.spend > 0).length} 个产生点击花费的数据项）
+                </span>
               </div>
-              <button
-                onClick={() => setIsTutorialOpen(true)}
-                className="text-amber-600 dark:text-amber-400 hover:text-amber-500 underline underline-offset-2 flex items-center gap-1 font-medium"
-              >
-                如何上传回亚马逊后台？
-              </button>
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={() => setIsTutorialOpen(true)}
+                  className="text-amber-600 dark:text-amber-400 hover:text-amber-500 underline underline-offset-2 flex items-center gap-1 font-medium"
+                >
+                  如何上传回亚马逊后台？
+                </button>
+              </div>
             </div>
 
             {/* Config Control Bar */}
@@ -260,6 +276,8 @@ export const App: React.FC = () => {
               onToggleAllNegatives={handleToggleAllNegatives}
               onToggleAllBids={handleToggleAllBids}
               onCustomBidChange={handleCustomBidChange}
+              isFullWidth={isFullWidth}
+              onToggleFullWidth={() => setIsFullWidth(!isFullWidth)}
             />
 
             {/* Bottom Export Bar */}

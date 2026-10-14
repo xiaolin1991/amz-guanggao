@@ -23,9 +23,17 @@ export interface NormalizedAdItem {
   adGroupId: string;
   adGroupName: string;
   keywordText: string;
-  matchType: string; // 'broad', 'phrase', 'exact', 'targeting', etc.
+  matchType: string; // raw match type
+  matchTypeDisplay: string; // e.g., '短语 (Phrase)', '精准 (Exact)', '广泛 (Broad)'
   state: 'enabled' | 'paused' | 'archived' | string;
   currentBid: number;
+  
+  // Amazon suggested bids if present in CSV
+  suggestedBidLow?: number;
+  suggestedBidMed?: number;
+  suggestedBidHigh?: number;
+  topOfSearchShare?: string; // e.g. '<5%'
+  campaignStatusDetail?: string; // e.g. '商品推广超出预算'
   
   // Performance metrics
   impressions: number;
@@ -34,9 +42,9 @@ export interface NormalizedAdItem {
   orders: number;
   sales: number;
   cpc: number;
-  ctr: number;
-  cvr: number;
-  acos: number; // in percentage, e.g., 45.2 for 45.2%
+  ctr: number; // in percentage, e.g., 0.37 for 0.37%
+  cvr: number; // in percentage
+  acos: number; // in percentage, e.g., 191.55 for 191.55%
   roas: number;
   
   // Raw row preserved for untouched columns during re-export

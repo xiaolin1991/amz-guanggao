@@ -23,7 +23,7 @@ export const ExportBar: React.FC<ExportBarProps> = ({
 
   return (
     <div className="fixed bottom-0 left-0 right-0 z-40 bg-white/95 dark:bg-slate-950/95 border-t border-slate-200 dark:border-slate-800 backdrop-blur-lg px-4 py-3.5 shadow-2xl transition-colors">
-      <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-4">
+      <div className="w-full max-w-[99%] mx-auto flex flex-wrap items-center justify-between gap-4">
         
         {/* Left summary */}
         <div className="flex items-center gap-3">
