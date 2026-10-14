@@ -9,6 +9,13 @@ import {
 import { parseAmazonExcel, ParseResult } from './utils/amazonBulkParser';
 import { runOptimizationDiagnosis } from './utils/optimizerEngine';
 import { exportUpdatedBulkFile } from './utils/bulkExporter';
+import { 
+  HistoryRecord, 
+  saveHistoryReport, 
+  getHistoryReports, 
+  deleteHistoryReport, 
+  clearAllHistoryReports 
+} from './utils/historyDb';
 import { MOCK_AD_ITEMS } from './data/mockBulkData';
 
 import { Header } from './components/Header';
@@ -32,6 +39,9 @@ export const App: React.FC = () => {
     return saved !== null ? saved === 'true' : true; // default true (wide screen mode)
   });
 
+  // History records list
+  const [historyRecords, setHistoryRecords] = useState<HistoryRecord[]>([]);
+
   useEffect(() => {
     localStorage.setItem('amz_theme', theme);
     const root = document.documentElement;
@@ -45,6 +55,15 @@ export const App: React.FC = () => {
   useEffect(() => {
     localStorage.setItem('amz_full_width', String(isFullWidth));
   }, [isFullWidth]);
+
+  // Load history records from IndexedDB on startup
+  useEffect(() => {
+    getHistoryReports().then(records => {
+      setHistoryRecords(records);
+    }).catch(err => {
+      console.warn('Failed to load history records:', err);
+    });
+  }, []);
 
   const handleToggleTheme = () => {
     setTheme(prev => (prev === 'light' ? 'dark' : 'light'));
@@ -69,8 +88,8 @@ export const App: React.FC = () => {
   const [customBidOverrides, setCustomBidOverrides] = useState<Record<string, number>>({});
   const [actionSelectionOverrides, setActionSelectionOverrides] = useState<Record<string, boolean>>({});
 
-  // Parse file
-  const handleFileLoaded = (buffer: ArrayBuffer, name: string) => {
+  // Parse file and persist into History DB
+  const handleFileLoaded = async (buffer: ArrayBuffer, name: string) => {
     setIsLoading(true);
     try {
       const result = parseAmazonExcel(buffer, name);
@@ -79,10 +98,73 @@ export const App: React.FC = () => {
       setFileName(name);
       setCustomBidOverrides({});
       setActionSelectionOverrides({});
+
+      // Calculate brief summary for history card
+      const totalSpend = result.items.reduce((sum, i) => sum + i.spend, 0);
+      const totalSales = result.items.reduce((sum, i) => sum + i.sales, 0);
+      const overallAcos = totalSales > 0 ? Number(((totalSpend / totalSales) * 100).toFixed(2)) : (totalSpend > 0 ? 100 : 0);
+
+      const now = new Date();
+      const dateStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`;
+
+      const historyItem: HistoryRecord = {
+        id: `rec_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`,
+        fileName: name,
+        uploadTime: dateStr,
+        itemCount: result.items.length,
+        totalSpend: Number(totalSpend.toFixed(2)),
+        totalSales: Number(totalSales.toFixed(2)),
+        overallAcos,
+        items: result.items,
+        rawRows: result.rawRows,
+        sheetName: result.sheetName
+      };
+
+      await saveHistoryReport(historyItem);
+      const updatedRecords = await getHistoryReports();
+      setHistoryRecords(updatedRecords);
     } catch (err: any) {
       alert(`解析失败: ${err.message || '文件格式不正确，请确保上传亚马逊官方报表'}`);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  // Load from History record
+  const handleLoadHistory = (record: HistoryRecord) => {
+    setParseResult({
+      sheetName: record.sheetName || 'Sponsored Products',
+      workbook: null as any,
+      items: record.items,
+      rawRows: record.rawRows || [],
+      totalRowCount: record.items.length
+    });
+    setItems(record.items);
+    setFileName(record.fileName);
+    setCustomBidOverrides({});
+    setActionSelectionOverrides({});
+  };
+
+  // Delete single history record
+  const handleDeleteHistory = async (id: string) => {
+    try {
+      await deleteHistoryReport(id);
+      const updated = await getHistoryReports();
+      setHistoryRecords(updated);
+    } catch (err) {
+      console.error('Failed to delete history record:', err);
+    }
+  };
+
+  // Clear all history records
+  const handleClearHistory = async () => {
+    if (confirm('确定要清空所有本地保存的报表历史记录吗？')) {
+      try {
+        await clearAllHistoryReports();
+        setHistoryRecords([]);
+      } catch (err) {
+        console.error('Failed to clear history:', err);
+      }
     }
   };
 
@@ -95,7 +177,7 @@ export const App: React.FC = () => {
     setActionSelectionOverrides({});
   };
 
-  // Reset
+  // Reset / Return to Home
   const handleReset = () => {
     setParseResult(null);
     setItems([]);
@@ -167,18 +249,34 @@ export const App: React.FC = () => {
     }));
   }, [baseHarvestActions, actionSelectionOverrides]);
 
-  // Toggle handlers
-  const handleToggleBidAction = (id: string) => {
-    const cur = bidActions.find(b => b.id === id);
-    if (cur) {
-      setActionSelectionOverrides(prev => ({ ...prev, [id]: !cur.selected }));
+  // Toggle handlers with Shift-range support
+  const handleToggleBidAction = (id: string, shiftRangeIds?: string[]) => {
+    if (shiftRangeIds && shiftRangeIds.length > 0) {
+      const newOverrides = { ...actionSelectionOverrides };
+      shiftRangeIds.forEach(rangeId => {
+        newOverrides[rangeId] = true;
+      });
+      setActionSelectionOverrides(newOverrides);
+    } else {
+      const cur = bidActions.find(b => b.id === id);
+      if (cur) {
+        setActionSelectionOverrides(prev => ({ ...prev, [id]: !cur.selected }));
+      }
     }
   };
 
-  const handleToggleNegativeAction = (id: string) => {
-    const cur = negativeActions.find(n => n.id === id);
-    if (cur) {
-      setActionSelectionOverrides(prev => ({ ...prev, [id]: !cur.selected }));
+  const handleToggleNegativeAction = (id: string, shiftRangeIds?: string[]) => {
+    if (shiftRangeIds && shiftRangeIds.length > 0) {
+      const newOverrides = { ...actionSelectionOverrides };
+      shiftRangeIds.forEach(rangeId => {
+        newOverrides[rangeId] = true;
+      });
+      setActionSelectionOverrides(newOverrides);
+    } else {
+      const cur = negativeActions.find(n => n.id === id);
+      if (cur) {
+        setActionSelectionOverrides(prev => ({ ...prev, [id]: !cur.selected }));
+      }
     }
   };
 
@@ -209,6 +307,19 @@ export const App: React.FC = () => {
     setCustomBidOverrides(prev => ({ ...prev, [id]: newBid }));
   };
 
+  // Batch Apply Bids
+  const handleBatchApplyBids = (updatesMap: Record<string, number>) => {
+    setCustomBidOverrides(prev => ({
+      ...prev,
+      ...updatesMap
+    }));
+  };
+
+  // Reset Bids to Algorithmic Suggested Bids
+  const handleResetBidsToSuggested = () => {
+    setCustomBidOverrides({});
+  };
+
   // Export
   const handleExport = () => {
     exportUpdatedBulkFile(parseResult, bidActions, negativeActions, harvestActions);
@@ -220,7 +331,7 @@ export const App: React.FC = () => {
       <Header
         onOpenTutorial={() => setIsTutorialOpen(true)}
         onLoadDemo={handleLoadDemo}
-        onReset={handleReset}
+        onGoHome={handleReset}
         hasData={items.length > 0}
         theme={theme}
         onToggleTheme={handleToggleTheme}
@@ -235,6 +346,10 @@ export const App: React.FC = () => {
             onFileLoaded={handleFileLoaded}
             onLoadDemo={handleLoadDemo}
             isLoading={isLoading}
+            historyRecords={historyRecords}
+            onLoadHistory={handleLoadHistory}
+            onDeleteHistory={handleDeleteHistory}
+            onClearHistory={handleClearHistory}
           />
         ) : (
           <>
@@ -249,6 +364,13 @@ export const App: React.FC = () => {
                 </span>
               </div>
               <div className="flex items-center gap-3">
+                <button
+                  onClick={handleReset}
+                  className="text-blue-600 dark:text-blue-400 hover:text-blue-500 font-medium flex items-center gap-1"
+                >
+                  更换其他报表
+                </button>
+                <span>·</span>
                 <button
                   onClick={() => setIsTutorialOpen(true)}
                   className="text-amber-600 dark:text-amber-400 hover:text-amber-500 underline underline-offset-2 flex items-center gap-1 font-medium"
@@ -276,6 +398,8 @@ export const App: React.FC = () => {
               onToggleAllNegatives={handleToggleAllNegatives}
               onToggleAllBids={handleToggleAllBids}
               onCustomBidChange={handleCustomBidChange}
+              onBatchApplyBids={handleBatchApplyBids}
+              onResetBidsToSuggested={handleResetBidsToSuggested}
               isFullWidth={isFullWidth}
               onToggleFullWidth={() => setIsFullWidth(!isFullWidth)}
             />

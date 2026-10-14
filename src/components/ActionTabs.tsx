@@ -10,9 +10,12 @@ import {
   ArrowDownRight,
   ArrowUpRight,
   ArrowUpDown,
-  Filter,
   Maximize2,
-  Minimize2
+  Minimize2,
+  Percent,
+  DollarSign,
+  Zap,
+  RotateCcw
 } from 'lucide-react';
 import { 
   BidAdjustmentAction, 
@@ -26,12 +29,14 @@ interface ActionTabsProps {
   negativeActions: NegativeTargetAction[];
   harvestActions: HarvestAction[];
   allItems: NormalizedAdItem[];
-  onToggleBidAction: (id: string) => void;
-  onToggleNegativeAction: (id: string) => void;
+  onToggleBidAction: (id: string, shiftRangeIds?: string[]) => void;
+  onToggleNegativeAction: (id: string, shiftRangeIds?: string[]) => void;
   onToggleHarvestAction: (id: string) => void;
   onToggleAllNegatives: (selected: boolean) => void;
   onToggleAllBids: (selected: boolean) => void;
   onCustomBidChange: (id: string, newBid: number) => void;
+  onBatchApplyBids: (adjustedBidsMap: Record<string, number>) => void;
+  onResetBidsToSuggested: () => void;
   isFullWidth: boolean;
   onToggleFullWidth: () => void;
 }
@@ -49,6 +54,8 @@ export const ActionTabs: React.FC<ActionTabsProps> = ({
   onToggleAllNegatives,
   onToggleAllBids,
   onCustomBidChange,
+  onBatchApplyBids,
+  onResetBidsToSuggested,
   isFullWidth,
   onToggleFullWidth
 }) => {
@@ -57,6 +64,17 @@ export const ActionTabs: React.FC<ActionTabsProps> = ({
   const [sortField, setSortField] = useState<SortField>('spend');
   const [sortAsc, setSortAsc] = useState<boolean>(false);
   const [filterOnlyActive, setFilterOnlyActive] = useState<boolean>(false);
+
+  // Shift-click selection index trackers
+  const [lastBidIndex, setLastBidIndex] = useState<number | null>(null);
+  const [lastNegIndex, setLastNegIndex] = useState<number | null>(null);
+
+  // Batch Bid Adjustment states
+  const [batchMode, setBatchMode] = useState<'percent' | 'fixed'>('percent');
+  const [batchDirection, setBatchDirection] = useState<'decrease' | 'increase'>('decrease');
+  const [batchPercentValue, setBatchPercentValue] = useState<number>(15);
+  const [batchFixedValue, setBatchFixedValue] = useState<number>(0.10);
+  const [batchBase, setBatchBase] = useState<'current' | 'suggested'>('suggested');
 
   const selectedNegativesCount = negativeActions.filter(n => n.selected).length;
   const selectedBidsCount = bidActions.filter(b => b.selected).length;
@@ -99,6 +117,65 @@ export const ActionTabs: React.FC<ActionTabsProps> = ({
       setSortField(field);
       setSortAsc(false); // default descending for metrics
     }
+  };
+
+  // Shift-click handler for Bid Actions
+  const handleBidClick = (index: number, actionId: string, event: React.MouseEvent) => {
+    if (event.shiftKey && lastBidIndex !== null) {
+      const start = Math.min(lastBidIndex, index);
+      const end = Math.max(lastBidIndex, index);
+      const rangeIds = bidActions.slice(start, end + 1).map(b => b.id);
+      onToggleBidAction(actionId, rangeIds);
+    } else {
+      onToggleBidAction(actionId);
+    }
+    setLastBidIndex(index);
+  };
+
+  // Shift-click handler for Negative Actions
+  const handleNegClick = (index: number, actionId: string, event: React.MouseEvent) => {
+    if (event.shiftKey && lastNegIndex !== null) {
+      const start = Math.min(lastNegIndex, index);
+      const end = Math.max(lastNegIndex, index);
+      const rangeIds = negativeActions.slice(start, end + 1).map(n => n.id);
+      onToggleNegativeAction(actionId, rangeIds);
+    } else {
+      onToggleNegativeAction(actionId);
+    }
+    setLastNegIndex(index);
+  };
+
+  // Execute Batch Bid Adjustment
+  const handleApplyBatchBid = () => {
+    const selectedBids = bidActions.filter(b => b.selected);
+    if (selectedBids.length === 0) {
+      alert('请先勾选需要调整出价的关键词！支持按住 Shift 键进行批量连选。');
+      return;
+    }
+
+    const updates: Record<string, number> = {};
+
+    selectedBids.forEach(action => {
+      const basePrice = batchBase === 'current' 
+        ? action.currentBid 
+        : (action.userCustomBid !== undefined ? action.userCustomBid : action.suggestedBid);
+
+      let newPrice = basePrice;
+
+      if (batchMode === 'percent') {
+        const factor = batchDirection === 'decrease' ? (1 - batchPercentValue / 100) : (1 + batchPercentValue / 100);
+        newPrice = basePrice * factor;
+      } else {
+        const delta = batchDirection === 'decrease' ? -batchFixedValue : batchFixedValue;
+        newPrice = basePrice + delta;
+      }
+
+      // Safety floor minimum $0.05
+      newPrice = Math.max(0.05, Number(newPrice.toFixed(2)));
+      updates[action.id] = newPrice;
+    });
+
+    onBatchApplyBids(updates);
   };
 
   return (
@@ -190,7 +267,7 @@ export const ActionTabs: React.FC<ActionTabsProps> = ({
         </div>
       </div>
 
-      {/* Tab 1: All Items Detailed Full Report (Now Tab 1) */}
+      {/* Tab 1: All Items Detailed Full Report */}
       {activeTab === 'all' && (
         <div className="p-4 space-y-4">
           <div className="flex flex-wrap items-center justify-between gap-3 bg-slate-50 dark:bg-slate-950/40 p-3 rounded-xl border border-slate-200 dark:border-slate-800">
@@ -300,7 +377,6 @@ export const ActionTabs: React.FC<ActionTabsProps> = ({
                 {sortedAndFilteredAllItems.map((item, idx) => {
                   const isBleeding = item.orders === 0 && item.spend > 0;
                   const isSevereAcos = item.acos > 50 && item.orders > 0;
-                  const isGoodWinner = item.acos <= 25 && item.orders > 0;
 
                   return (
                     <tr 
@@ -445,7 +521,7 @@ export const ActionTabs: React.FC<ActionTabsProps> = ({
         </div>
       )}
 
-      {/* Tab 2: Negative Keywords Table */}
+      {/* Tab 2: Negative Keywords Table (with Shift-click support) */}
       {activeTab === 'negative' && (
         <div className="p-4 space-y-4">
           <div className="flex flex-wrap items-center justify-between gap-3 bg-rose-50 dark:bg-rose-950/20 border border-rose-200 dark:border-rose-900/30 rounded-xl p-3 text-xs">
@@ -453,6 +529,9 @@ export const ActionTabs: React.FC<ActionTabsProps> = ({
               <AlertOctagon className="w-4 h-4 text-rose-500 dark:text-rose-400 flex-shrink-0" />
               <span>
                 已选中 <strong>{selectedNegativesCount}</strong> 个吸血词，确认导出后将生成精准否定，可直接堵住 <strong>${totalNegativeSavings.toFixed(2)}</strong> 的无转化亏损漏洞。
+              </span>
+              <span className="text-slate-400 dark:text-slate-500 text-[11px]">
+                （💡 提示：按住键盘 <kbd className="px-1.5 py-0.5 bg-white dark:bg-slate-800 border rounded font-mono text-[10px]">Shift</kbd> 键点击复选框，可快速批量连选！）
               </span>
             </div>
             <div className="flex items-center gap-2">
@@ -487,18 +566,19 @@ export const ActionTabs: React.FC<ActionTabsProps> = ({
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60 font-mono">
-                {negativeActions.map(action => (
+                {negativeActions.map((action, idx) => (
                   <tr 
                     key={action.id}
-                    className={`hover:bg-slate-50 dark:hover:bg-slate-800/40 transition cursor-pointer ${
+                    className={`hover:bg-slate-50 dark:hover:bg-slate-800/40 transition cursor-pointer select-none ${
                       action.selected ? 'bg-rose-50/40 dark:bg-rose-950/10' : 'opacity-60'
                     }`}
-                    onClick={() => onToggleNegativeAction(action.id)}
+                    onClick={e => handleNegClick(idx, action.id, e)}
                   >
                     <td className="p-3 text-center" onClick={e => e.stopPropagation()}>
                       <button 
-                        onClick={() => onToggleNegativeAction(action.id)}
+                        onClick={e => handleNegClick(idx, action.id, e)}
                         className="text-slate-400 hover:text-rose-500 dark:hover:text-amber-400"
+                        title="按住 Shift 可连续范围勾选"
                       >
                         {action.selected ? (
                           <CheckSquare className="w-4 h-4 text-rose-500 dark:text-rose-400" />
@@ -550,28 +630,187 @@ export const ActionTabs: React.FC<ActionTabsProps> = ({
         </div>
       )}
 
-      {/* Tab 3: Bid Adjustment Table */}
+      {/* Tab 3: Bid Adjustment Table (with Shift-click + Batch adjustment toolbar) */}
       {activeTab === 'bid' && (
         <div className="p-4 space-y-4">
-          <div className="flex flex-wrap items-center justify-between gap-3 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900/30 rounded-xl p-3 text-xs">
-            <div className="flex items-center gap-2 text-amber-800 dark:text-amber-300">
-              <TrendingDown className="w-4 h-4 text-amber-500 dark:text-amber-400 flex-shrink-0" />
-              <span>
-                根据<strong>目标保本 ACOS</strong> 算法自动核算出价。支持在输入框内微调自定义价格。
-              </span>
+          
+          {/* Batch Bid Adjustment Toolbar */}
+          <div className="bg-gradient-to-r from-amber-500/10 via-amber-500/5 to-transparent border border-amber-300 dark:border-amber-800/80 rounded-2xl p-4 space-y-3 shadow-sm">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="flex items-center gap-2">
+                <div className="p-1.5 bg-amber-500 text-slate-950 rounded-lg">
+                  <Zap className="w-4 h-4" />
+                </div>
+                <div>
+                  <h4 className="font-bold text-xs text-slate-900 dark:text-white flex items-center gap-2">
+                    批量竞价调价工具
+                    <span className="text-[11px] font-normal text-amber-700 dark:text-amber-400">
+                      （当前已选中 <strong className="font-bold">{selectedBidsCount}</strong> 项，支持按住 <kbd className="px-1 py-0.2 bg-white dark:bg-slate-800 border rounded font-mono text-[10px]">Shift</kbd> 批量连选）
+                    </span>
+                  </h4>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={onResetBidsToSuggested}
+                  className="text-xs text-slate-600 dark:text-slate-300 hover:text-amber-600 px-3 py-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg transition flex items-center gap-1 shadow-sm"
+                  title="重置为根据目标ACOS算出的系统建议价"
+                >
+                  <RotateCcw className="w-3.5 h-3.5" />
+                  <span>恢复系统建议价</span>
+                </button>
+                <button
+                  onClick={() => onToggleAllBids(true)}
+                  className="text-xs text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white px-2.5 py-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg transition"
+                >
+                  全选
+                </button>
+                <button
+                  onClick={() => onToggleAllBids(false)}
+                  className="text-xs text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white px-2.5 py-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg transition"
+                >
+                  取消全选
+                </button>
+              </div>
             </div>
-            <div className="flex items-center gap-2">
+
+            {/* Controls Row */}
+            <div className="flex flex-wrap items-center gap-3 pt-1 text-xs">
+              {/* Mode switch */}
+              <div className="flex rounded-lg border border-slate-300 dark:border-slate-700 p-0.5 bg-white dark:bg-slate-800">
+                <button
+                  onClick={() => setBatchMode('percent')}
+                  className={`px-3 py-1 rounded-md font-medium text-xs flex items-center gap-1 transition ${
+                    batchMode === 'percent'
+                      ? 'bg-amber-500 text-slate-950 font-bold shadow-sm'
+                      : 'text-slate-600 dark:text-slate-300 hover:text-slate-900'
+                  }`}
+                >
+                  <Percent className="w-3 h-3" /> 按比例加减 (%)
+                </button>
+                <button
+                  onClick={() => setBatchMode('fixed')}
+                  className={`px-3 py-1 rounded-md font-medium text-xs flex items-center gap-1 transition ${
+                    batchMode === 'fixed'
+                      ? 'bg-amber-500 text-slate-950 font-bold shadow-sm'
+                      : 'text-slate-600 dark:text-slate-300 hover:text-slate-900'
+                  }`}
+                >
+                  <DollarSign className="w-3 h-3" /> 按固定金额加减 ($)
+                </button>
+              </div>
+
+              {/* Direction switch */}
+              <div className="flex rounded-lg border border-slate-300 dark:border-slate-700 p-0.5 bg-white dark:bg-slate-800">
+                <button
+                  onClick={() => setBatchDirection('decrease')}
+                  className={`px-2.5 py-1 rounded-md font-medium text-xs transition ${
+                    batchDirection === 'decrease'
+                      ? 'bg-rose-500 text-white font-bold'
+                      : 'text-slate-600 dark:text-slate-300'
+                  }`}
+                >
+                  📉 降低出价
+                </button>
+                <button
+                  onClick={() => setBatchDirection('increase')}
+                  className={`px-2.5 py-1 rounded-md font-medium text-xs transition ${
+                    batchDirection === 'increase'
+                      ? 'bg-emerald-500 text-white font-bold'
+                      : 'text-slate-600 dark:text-slate-300'
+                  }`}
+                >
+                  📈 提高出价
+                </button>
+              </div>
+
+              {/* Value Input */}
+              {batchMode === 'percent' ? (
+                <div className="flex items-center gap-1.5">
+                  <span className="text-slate-500 font-medium">调整幅度:</span>
+                  <div className="flex items-center bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg px-2 py-1">
+                    <input
+                      type="number"
+                      min="1"
+                      max="80"
+                      value={batchPercentValue}
+                      onChange={e => setBatchPercentValue(Math.max(1, parseInt(e.target.value) || 0))}
+                      className="w-12 text-center text-xs font-bold text-amber-600 dark:text-amber-400 bg-transparent focus:outline-none"
+                    />
+                    <span className="text-slate-400 font-bold">%</span>
+                  </div>
+                  {/* Quick pills */}
+                  <div className="hidden sm:flex items-center gap-1">
+                    {[10, 15, 20, 30].map(pct => (
+                      <button
+                        key={pct}
+                        onClick={() => setBatchPercentValue(pct)}
+                        className={`px-2 py-0.5 rounded text-[11px] border transition ${
+                          batchPercentValue === pct
+                            ? 'bg-amber-100 text-amber-800 border-amber-300 font-bold'
+                            : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-400 border-slate-200 hover:border-slate-400'
+                        }`}
+                      >
+                        {pct}%
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <div className="flex items-center gap-1.5">
+                  <span className="text-slate-500 font-medium">固定金额:</span>
+                  <div className="flex items-center bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg px-2 py-1">
+                    <span className="text-slate-400 font-bold mr-0.5">$</span>
+                    <input
+                      type="number"
+                      step="0.05"
+                      min="0.01"
+                      max="5"
+                      value={batchFixedValue}
+                      onChange={e => setBatchFixedValue(parseFloat(e.target.value) || 0)}
+                      className="w-14 text-center text-xs font-bold text-amber-600 dark:text-amber-400 bg-transparent focus:outline-none"
+                    />
+                  </div>
+                  {/* Quick pills */}
+                  <div className="hidden sm:flex items-center gap-1">
+                    {[0.05, 0.10, 0.15, 0.20].map(amt => (
+                      <button
+                        key={amt}
+                        onClick={() => setBatchFixedValue(amt)}
+                        className={`px-2 py-0.5 rounded text-[11px] border transition ${
+                          batchFixedValue === amt
+                            ? 'bg-amber-100 text-amber-800 border-amber-300 font-bold'
+                            : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-400 border-slate-200 hover:border-slate-400'
+                        }`}
+                      >
+                        ${amt.toFixed(2)}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Base price reference */}
+              <div className="flex items-center gap-1.5">
+                <span className="text-slate-500">基准:</span>
+                <select
+                  value={batchBase}
+                  onChange={e => setBatchBase(e.target.value as any)}
+                  className="bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg px-2 py-1 text-xs text-slate-700 dark:text-slate-200 focus:outline-none"
+                >
+                  <option value="suggested">基于系统建议保本价</option>
+                  <option value="current">基于原出价 (竞价)</option>
+                </select>
+              </div>
+
+              {/* Apply Button */}
               <button
-                onClick={() => onToggleAllBids(true)}
-                className="text-xs text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white px-2.5 py-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg transition"
+                onClick={handleApplyBatchBid}
+                className="px-4 py-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-lg text-xs transition shadow-md shadow-amber-500/20 active:scale-95 flex items-center gap-1 ml-auto"
               >
-                全选
-              </button>
-              <button
-                onClick={() => onToggleAllBids(false)}
-                className="text-xs text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white px-2.5 py-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg transition"
-              >
-                取消全选
+                <Zap className="w-3.5 h-3.5" />
+                <span>批量应用到已选 {selectedBidsCount} 项</span>
               </button>
             </div>
           </div>
@@ -584,7 +823,7 @@ export const ActionTabs: React.FC<ActionTabsProps> = ({
                   <th className="p-3">关键词 / 投放</th>
                   <th className="p-3">匹配类型</th>
                   <th className="p-3">原出价</th>
-                  <th className="p-3 text-amber-600 dark:text-amber-400">建议调价 (可改)</th>
+                  <th className="p-3 text-amber-600 dark:text-amber-400">最终出价 (可手动微调)</th>
                   <th className="p-3">调整幅度</th>
                   <th className="p-3">当前 ACOS</th>
                   <th className="p-3">总成本 / 购买量</th>
@@ -593,17 +832,18 @@ export const ActionTabs: React.FC<ActionTabsProps> = ({
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60 font-mono">
-                {bidActions.map(action => (
+                {bidActions.map((action, idx) => (
                   <tr 
                     key={action.id}
-                    className={`hover:bg-slate-50 dark:hover:bg-slate-800/40 transition ${
+                    className={`hover:bg-slate-50 dark:hover:bg-slate-800/40 transition select-none ${
                       action.selected ? 'bg-amber-50/40 dark:bg-amber-950/10' : 'opacity-60'
                     }`}
                   >
                     <td className="p-3 text-center">
                       <button 
-                        onClick={() => onToggleBidAction(action.id)}
+                        onClick={e => handleBidClick(idx, action.id, e)}
                         className="text-slate-400 hover:text-amber-500 dark:hover:text-amber-400"
+                        title="按住 Shift 键点击可连续勾选"
                       >
                         {action.selected ? (
                           <CheckSquare className="w-4 h-4 text-amber-500 dark:text-amber-400" />
@@ -632,7 +872,7 @@ export const ActionTabs: React.FC<ActionTabsProps> = ({
                           min="0.05"
                           value={action.userCustomBid !== undefined ? action.userCustomBid : action.suggestedBid}
                           onChange={e => onCustomBidChange(action.id, parseFloat(e.target.value) || 0)}
-                          className="w-16 px-1.5 py-0.5 rounded bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-amber-600 dark:text-amber-400 font-mono text-xs focus:outline-none focus:border-amber-500"
+                          className="w-16 px-1.5 py-0.5 rounded bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-amber-600 dark:text-amber-400 font-mono text-xs focus:outline-none focus:border-amber-500 shadow-sm"
                         />
                       </div>
                     </td>
