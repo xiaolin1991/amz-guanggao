@@ -1,8 +1,8 @@
-import React, { useState, useMemo, useRef } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { 
   AlertOctagon, 
   TrendingDown, 
-  TrendingUp,
+  TrendingUp, 
   Sparkles, 
   Table, 
   CheckSquare, 
@@ -18,7 +18,10 @@ import {
   Copy, 
   Check, 
   Type, 
-  MoveHorizontal
+  MoveHorizontal,
+  Download,
+  FileSpreadsheet,
+  X
 } from 'lucide-react';
 import { 
   BidAdjustmentAction, 
@@ -96,6 +99,12 @@ interface ActionTabsProps {
   onResetBidsToSuggested: () => void;
   isFullWidth: boolean;
   onToggleFullWidth: () => void;
+  isFullscreenWorkspace?: boolean;
+  onToggleFullscreenWorkspace?: () => void;
+  fileName?: string;
+  onExport?: () => void;
+  onExportReview?: () => void;
+  onOpenTutorial?: () => void;
 }
 
 export const ActionTabs: React.FC<ActionTabsProps> = ({
@@ -113,8 +122,40 @@ export const ActionTabs: React.FC<ActionTabsProps> = ({
   onResetBidsToOriginal,
   onResetBidsToSuggested,
   isFullWidth,
-  onToggleFullWidth
+  onToggleFullWidth,
+  isFullscreenWorkspace,
+  onToggleFullscreenWorkspace,
+  fileName,
+  onExport,
+  onExportReview,
+  onOpenTutorial
 }) => {
+  const [internalFullscreen, setInternalFullscreen] = useState(false);
+  const isFullscreen = isFullscreenWorkspace ?? internalFullscreen;
+  const handleToggleFullscreen = onToggleFullscreenWorkspace ?? (() => setInternalFullscreen(prev => !prev));
+
+  // Batch toolbar collapse toggle to free vertical height for table
+  const [isBatchToolbarCollapsed, setIsBatchToolbarCollapsed] = useState(false);
+
+  // Lock body scroll and listen for ESC key when in fullscreen mode
+  useEffect(() => {
+    if (isFullscreen) {
+      const originalOverflow = document.body.style.overflow;
+      document.body.style.overflow = 'hidden';
+
+      const handleKeyDown = (e: KeyboardEvent) => {
+        if (e.key === 'Escape') {
+          handleToggleFullscreen();
+        }
+      };
+      window.addEventListener('keydown', handleKeyDown);
+      return () => {
+        document.body.style.overflow = originalOverflow;
+        window.removeEventListener('keydown', handleKeyDown);
+      };
+    }
+  }, [isFullscreen, handleToggleFullscreen]);
+
   const [activeTab, setActiveTab] = useState<'all' | 'bid' | 'negative' | 'harvest'>('bid');
   const [searchTerm, setSearchTerm] = useState('');
   const [sortField, setSortField] = useState<SortField>('spend');
@@ -441,15 +482,53 @@ export const ActionTabs: React.FC<ActionTabsProps> = ({
   const someFilteredSelected = sortedAndFilteredBidActions.some(b => b.selected);
 
   return (
-    <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm overflow-hidden flex flex-col transition-colors">
+    <div className={
+      isFullscreen
+        ? "fixed inset-0 z-50 bg-white dark:bg-slate-950 flex flex-col h-screen w-screen overflow-hidden shadow-2xl animate-in fade-in duration-150"
+        : "bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm overflow-hidden flex flex-col transition-colors"
+    }>
       
+      {/* Dedicated Top App Bar for Fullscreen Workspace */}
+      {isFullscreen && (
+        <div className="flex-shrink-0 bg-slate-900 text-white px-4 py-2 flex items-center justify-between border-b border-slate-800 shadow-md select-none">
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
+              <span className="px-2 py-0.5 rounded bg-amber-500 text-slate-950 font-black text-xs">AMZ</span>
+              <span className="font-bold text-sm text-amber-400">晓林Amz广告调价助手 · 专属独立调价工作台</span>
+            </div>
+            {fileName && (
+              <span className="hidden sm:inline-flex items-center gap-1 text-xs text-slate-300 bg-slate-800/80 px-2.5 py-0.5 rounded border border-slate-700">
+                📄 {fileName}
+              </span>
+            )}
+            <span className="hidden md:inline-flex items-center gap-1 text-xs text-amber-300 bg-amber-500/20 px-2 py-0.5 rounded border border-amber-500/30">
+              已选 {selectedBidsCount} 项调价 · {selectedNegativesCount} 项否定
+            </span>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <span className="text-xs text-slate-400 hidden lg:inline">
+              ✨ 提示：表头与调价工具永远置顶，在表格内滚轮上下滑动不会带动网页！
+            </span>
+            <button
+              onClick={handleToggleFullscreen}
+              className="flex items-center gap-1 px-3 py-1 bg-amber-500 hover:bg-amber-400 text-slate-950 rounded-lg text-xs font-bold transition shadow-sm active:scale-95"
+              title="退出独立全屏工作台，返回普通网页模式 (快捷键: ESC)"
+            >
+              <Minimize2 className="w-3.5 h-3.5" />
+              <span>退出全屏 (ESC)</span>
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Tab Navigation & Width Toggle */}
-      <div className="flex flex-wrap items-center justify-between border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/60 px-4 pt-3 gap-2">
+      <div className="flex flex-wrap items-center justify-between border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/60 px-4 pt-2.5 gap-2 flex-shrink-0">
         <div className="flex gap-2 overflow-x-auto">
           {/* Tab: Bid Adjustment (Now Prominent) */}
           <button
             onClick={() => setActiveTab('bid')}
-            className={`px-4 py-3 font-semibold text-xs rounded-t-xl flex items-center gap-2 transition whitespace-nowrap border-b-2 ${
+            className={`px-4 py-2.5 font-semibold text-xs rounded-t-xl flex items-center gap-2 transition whitespace-nowrap border-b-2 ${
               activeTab === 'bid'
                 ? 'bg-white dark:bg-slate-900 text-amber-600 dark:text-amber-400 border-amber-500 shadow-sm'
                 : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 border-transparent hover:bg-slate-100 dark:hover:bg-slate-900/40'
@@ -464,7 +543,7 @@ export const ActionTabs: React.FC<ActionTabsProps> = ({
 
           <button
             onClick={() => setActiveTab('negative')}
-            className={`px-4 py-3 font-semibold text-xs rounded-t-xl flex items-center gap-2 transition whitespace-nowrap border-b-2 ${
+            className={`px-4 py-2.5 font-semibold text-xs rounded-t-xl flex items-center gap-2 transition whitespace-nowrap border-b-2 ${
               activeTab === 'negative'
                 ? 'bg-white dark:bg-slate-900 text-rose-600 dark:text-rose-400 border-rose-500 shadow-sm'
                 : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 border-transparent hover:bg-slate-100 dark:hover:bg-slate-900/40'
@@ -479,7 +558,7 @@ export const ActionTabs: React.FC<ActionTabsProps> = ({
 
           <button
             onClick={() => setActiveTab('harvest')}
-            className={`px-4 py-3 font-semibold text-xs rounded-t-xl flex items-center gap-2 transition whitespace-nowrap border-b-2 ${
+            className={`px-4 py-2.5 font-semibold text-xs rounded-t-xl flex items-center gap-2 transition whitespace-nowrap border-b-2 ${
               activeTab === 'harvest'
                 ? 'bg-white dark:bg-slate-900 text-emerald-600 dark:text-emerald-400 border-emerald-500 shadow-sm'
                 : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 border-transparent hover:bg-slate-100 dark:hover:bg-slate-900/40'
@@ -494,7 +573,7 @@ export const ActionTabs: React.FC<ActionTabsProps> = ({
 
           <button
             onClick={() => setActiveTab('all')}
-            className={`px-4 py-3 font-semibold text-xs rounded-t-xl flex items-center gap-2 transition whitespace-nowrap border-b-2 ${
+            className={`px-4 py-2.5 font-semibold text-xs rounded-t-xl flex items-center gap-2 transition whitespace-nowrap border-b-2 ${
               activeTab === 'all'
                 ? 'bg-white dark:bg-slate-900 text-blue-600 dark:text-blue-400 border-blue-500 shadow-sm'
                 : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 border-transparent hover:bg-slate-100 dark:hover:bg-slate-900/40'
@@ -578,21 +657,46 @@ export const ActionTabs: React.FC<ActionTabsProps> = ({
             </button>
           </div>
 
-          {/* Width Expander Button */}
+          {/* Width Expander Button (Only in normal embedded mode) */}
+          {!isFullscreen && (
+            <button
+              onClick={onToggleFullWidth}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-slate-600 dark:text-slate-300 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700 transition shadow-sm"
+              title={isFullWidth ? '收起为标准宽度' : '拉宽显示全部报告内容'}
+            >
+              {isFullWidth ? (
+                <>
+                  <Minimize2 className="w-3.5 h-3.5 text-blue-500" />
+                  <span>收起标准宽度</span>
+                </>
+              ) : (
+                <>
+                  <Maximize2 className="w-3.5 h-3.5 text-blue-500" />
+                  <span>展开超宽屏显示</span>
+                </>
+              )}
+            </button>
+          )}
+
+          {/* Fullscreen Workbench Toggle Button */}
           <button
-            onClick={onToggleFullWidth}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-slate-600 dark:text-slate-300 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700 transition shadow-sm"
-            title={isFullWidth ? '收起为标准宽度' : '拉宽显示全部报告内容'}
+            onClick={handleToggleFullscreen}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition shadow-sm active:scale-95 ${
+              isFullscreen
+                ? 'bg-amber-500 text-slate-950 hover:bg-amber-400'
+                : 'text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-700 hover:bg-amber-100 dark:hover:bg-amber-900/60'
+            }`}
+            title={isFullscreen ? '退出全屏工作台 (ESC)' : '打开专属独立全屏调价工作台 (推荐：彻底解决滚动冲突，表头永远置顶)'}
           >
-            {isFullWidth ? (
+            {isFullscreen ? (
               <>
-                <Minimize2 className="w-3.5 h-3.5 text-blue-500" />
-                <span>收起标准宽度</span>
+                <Minimize2 className="w-3.5 h-3.5" />
+                <span>退出工作台 (ESC)</span>
               </>
             ) : (
               <>
-                <Maximize2 className="w-3.5 h-3.5 text-blue-500" />
-                <span>展开超宽屏显示</span>
+                <Maximize2 className="w-3.5 h-3.5 text-amber-500" />
+                <span>⛶ 独立全屏工作台 (推荐)</span>
               </>
             )}
           </button>
@@ -601,10 +705,10 @@ export const ActionTabs: React.FC<ActionTabsProps> = ({
 
       {/* Tab 1: Bid Adjustment Center (MAIN FOCUS) */}
       {activeTab === 'bid' && (
-        <div className="p-4 space-y-4">
+        <div className={`p-4 ${isFullscreen ? 'flex-1 min-h-0 flex flex-col space-y-2.5 overflow-hidden' : 'space-y-4'}`}>
           
           {/* Sub-Filters and Selection Helper */}
-          <div className="flex flex-wrap items-center justify-between gap-3 bg-slate-50 dark:bg-slate-950/40 p-3 rounded-2xl border border-slate-200 dark:border-slate-800 text-xs">
+          <div className="flex flex-wrap items-center justify-between gap-3 bg-slate-50 dark:bg-slate-950/40 p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 text-xs flex-shrink-0">
             <div className="flex flex-wrap items-center gap-2">
               <span className="text-slate-500 font-medium">筛选调价类别:</span>
               <button
@@ -683,7 +787,7 @@ export const ActionTabs: React.FC<ActionTabsProps> = ({
           </div>
 
           {/* Batch Bid Adjustment Toolbar (Defaults to CURRENT BID 原出价!) */}
-          <div className="bg-gradient-to-r from-amber-500/10 via-amber-500/5 to-transparent border border-amber-300 dark:border-amber-800/80 rounded-2xl p-4 space-y-3 shadow-sm">
+          <div className="bg-gradient-to-r from-amber-500/10 via-amber-500/5 to-transparent border border-amber-300 dark:border-amber-800/80 rounded-xl p-3 space-y-2.5 shadow-sm flex-shrink-0">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div className="flex items-center gap-2">
                 <div className="p-1.5 bg-amber-500 text-slate-950 rounded-lg">
@@ -729,11 +833,20 @@ export const ActionTabs: React.FC<ActionTabsProps> = ({
                   <Sparkles className="w-3.5 h-3.5 text-amber-500" />
                   <span>填入算法建议价</span>
                 </button>
+                <button
+                  type="button"
+                  onClick={() => setIsBatchToolbarCollapsed(!isBatchToolbarCollapsed)}
+                  className="text-xs text-slate-500 hover:text-slate-700 dark:hover:text-slate-200 px-2 py-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg transition flex items-center gap-1"
+                  title={isBatchToolbarCollapsed ? '展开批量调价控制台' : '收起批量调价控制台，留出更多表格高度'}
+                >
+                  <span>{isBatchToolbarCollapsed ? '🔽 展开调价参数' : '🔼 收起调价参数'}</span>
+                </button>
               </div>
             </div>
 
             {/* Controls Row: User MANUALLY decides Increase or Decrease, and baseline defaults to CURRENT BID */}
-            <div className="flex flex-wrap items-center gap-3 pt-1 text-xs">
+            {!isBatchToolbarCollapsed && (
+              <div className="flex flex-wrap items-center gap-3 pt-1 text-xs">
               
               {/* Manual Direction Switch: 提高 or 降低 */}
               <div className="flex rounded-lg border border-slate-300 dark:border-slate-700 p-0.5 bg-white dark:bg-slate-800">
@@ -979,10 +1092,11 @@ export const ActionTabs: React.FC<ActionTabsProps> = ({
                 <span>批量应用到已选 {selectedBidsCount} 项</span>
               </button>
             </div>
+            )}
           </div>
 
           {/* Search bar inside Bid Tab */}
-          <div className="relative">
+          <div className="relative flex-shrink-0">
             <Search className="w-4 h-4 absolute left-3 top-2.5 text-slate-400" />
             <input
               type="text"
@@ -996,7 +1110,7 @@ export const ActionTabs: React.FC<ActionTabsProps> = ({
           {/* Table Container - supports smooth vertical & horizontal scrolling with sticky header */}
           <div 
             ref={bidTableRef}
-            className="max-h-[600px] 2xl:max-h-[720px] overflow-y-auto overflow-x-auto border border-slate-200 dark:border-slate-800 rounded-xl shadow-sm visible-table-scrollbar relative"
+            className={`${isFullscreen ? 'flex-1 min-h-0' : 'max-h-[600px] 2xl:max-h-[720px]'} overflow-y-auto overflow-x-auto border border-slate-200 dark:border-slate-800 rounded-xl shadow-sm visible-table-scrollbar relative overscroll-contain`}
           >
             <table className={`w-full text-left ${fontSizeClass} text-slate-600 dark:text-slate-300 whitespace-nowrap`}>
               <thead className="sticky top-0 z-10 bg-slate-100 dark:bg-slate-950 text-slate-700 dark:text-slate-300 uppercase text-[11px] font-bold border-b border-slate-300 dark:border-slate-700 shadow-sm">
@@ -1240,7 +1354,7 @@ export const ActionTabs: React.FC<ActionTabsProps> = ({
           </div>
 
           {/* Requirement 2: Horizontal Scroll Navigation Bar (底部明显左右滑动控制与提示) */}
-          <div className="flex flex-wrap items-center justify-between px-3.5 py-2.5 bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800 rounded-xl text-xs gap-2">
+          <div className="flex flex-wrap items-center justify-between px-3.5 py-2.5 bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800 rounded-xl text-xs gap-2 flex-shrink-0">
             <div className="flex items-center gap-2">
               <button
                 type="button"
@@ -1258,10 +1372,54 @@ export const ActionTabs: React.FC<ActionTabsProps> = ({
               >
                 <span>向右滑动 ➡️</span>
               </button>
+              <div className="hidden md:flex items-center gap-2 text-slate-500 dark:text-slate-400 text-[11px] min-w-0 truncate ml-2">
+                <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse flex-shrink-0" />
+                <span className="truncate">💡 拖动上方金色滚动条，或按键盘 <kbd className="px-1.5 py-0.5 bg-white dark:bg-slate-800 border rounded font-mono text-[10px]">Shift</kbd> + 滚轮横移</span>
+              </div>
             </div>
-            <div className="flex items-center gap-2 text-slate-500 dark:text-slate-400 text-[11px] min-w-0 truncate">
-              <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse flex-shrink-0" />
-              <span className="truncate">💡 拖动上方金色滚动条，或按键盘 <kbd className="px-1.5 py-0.5 bg-white dark:bg-slate-800 border rounded font-mono text-[10px]">Shift</kbd> + 滚轮横移查看全部数据</span>
+
+            <div className="flex items-center gap-2.5">
+              {isFullscreen ? (
+                <>
+                  {onExportReview && (
+                    <button
+                      onClick={onExportReview}
+                      className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg transition shadow-sm"
+                      title="下载包含本次所有调价依据、幅度与诊断原因的明细表（仅供卖家内部留存复盘）"
+                    >
+                      <FileSpreadsheet className="w-3.5 h-3.5 text-amber-500" />
+                      <span>下载复盘明细</span>
+                    </button>
+                  )}
+                  {onExport && (
+                    <button
+                      onClick={onExport}
+                      className="flex items-center gap-1.5 px-4 py-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs rounded-lg transition shadow-md shadow-amber-500/20 active:scale-95"
+                      title="采用亚马逊官方标准格式（无多余工作表，防后台报错）"
+                    >
+                      <Download className="w-3.5 h-3.5" />
+                      <span>一键导出亚马逊 Bulk 表 (.xlsx)</span>
+                    </button>
+                  )}
+                  <button
+                    onClick={handleToggleFullscreen}
+                    className="flex items-center gap-1 px-2.5 py-1.5 bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-lg text-xs font-semibold transition active:scale-95"
+                    title="退出全屏 (ESC)"
+                  >
+                    <Minimize2 className="w-3.5 h-3.5" />
+                    <span>退出 (ESC)</span>
+                  </button>
+                </>
+              ) : (
+                <button
+                  onClick={handleToggleFullscreen}
+                  className="flex items-center gap-1 px-3 py-1 text-xs font-bold text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-700 hover:bg-amber-100 rounded-lg transition shadow-sm"
+                  title="觉得网页滚动不方便？点击打开专属独立全屏工作台"
+                >
+                  <Maximize2 className="w-3.5 h-3.5 text-amber-500" />
+                  <span>⛶ 打开全屏工作台</span>
+                </button>
+              )}
             </div>
           </div>
         </div>
@@ -1269,8 +1427,8 @@ export const ActionTabs: React.FC<ActionTabsProps> = ({
 
       {/* Tab 2: Negative Keywords Table */}
       {activeTab === 'negative' && (
-        <div className="p-4 space-y-4">
-          <div className="flex flex-wrap items-center justify-between gap-3 bg-rose-50 dark:bg-rose-950/20 border border-rose-200 dark:border-rose-900/30 rounded-xl p-3 text-xs">
+        <div className={`p-4 ${isFullscreen ? 'flex-1 min-h-0 flex flex-col space-y-2.5 overflow-hidden' : 'space-y-4'}`}>
+          <div className="flex flex-wrap items-center justify-between gap-3 bg-rose-50 dark:bg-rose-950/20 border border-rose-200 dark:border-rose-900/30 rounded-xl p-3 text-xs flex-shrink-0">
             <div className="flex items-center gap-2 text-rose-800 dark:text-rose-300">
               <AlertOctagon className="w-4 h-4 text-rose-500 dark:text-rose-400 flex-shrink-0" />
               <span>
@@ -1296,7 +1454,7 @@ export const ActionTabs: React.FC<ActionTabsProps> = ({
             </div>
           </div>
 
-          <div className="max-h-[600px] 2xl:max-h-[720px] overflow-y-auto overflow-x-auto border border-slate-200 dark:border-slate-800 rounded-xl shadow-sm visible-table-scrollbar relative">
+          <div className={`${isFullscreen ? 'flex-1 min-h-0' : 'max-h-[600px] 2xl:max-h-[720px]'} overflow-y-auto overflow-x-auto border border-slate-200 dark:border-slate-800 rounded-xl shadow-sm visible-table-scrollbar relative overscroll-contain`}>
             <table className={`w-full text-left ${fontSizeClass} text-slate-600 dark:text-slate-300 whitespace-nowrap`}>
               <thead className="sticky top-0 z-10 bg-slate-100 dark:bg-slate-950 text-slate-700 dark:text-slate-300 uppercase text-[11px] font-bold border-b border-slate-300 dark:border-slate-700 shadow-sm">
                 <tr>
@@ -1373,20 +1531,61 @@ export const ActionTabs: React.FC<ActionTabsProps> = ({
               </tbody>
             </table>
           </div>
+
+          {/* Bottom Navigation & Actions for Tab 2 */}
+          <div className="flex flex-wrap items-center justify-between px-3.5 py-2.5 bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800 rounded-xl text-xs gap-2 flex-shrink-0">
+            <div className="text-slate-600 dark:text-slate-300 text-xs flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-rose-500 animate-pulse flex-shrink-0" />
+              <span>当前已选中 <strong className="text-rose-600 dark:text-rose-400 font-bold">{selectedNegativesCount}</strong> 个吸血否定词 · 预计可堵住 <strong className="text-rose-600 dark:text-rose-400 font-bold">${totalNegativeSavings.toFixed(2)}</strong> 亏损</span>
+            </div>
+            <div className="flex items-center gap-2.5">
+              {isFullscreen ? (
+                <>
+                  {onExport && (
+                    <button
+                      onClick={onExport}
+                      className="flex items-center gap-1.5 px-4 py-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs rounded-lg transition shadow-md shadow-amber-500/20 active:scale-95"
+                      title="采用亚马逊官方标准格式（无多余工作表，防后台报错）"
+                    >
+                      <Download className="w-3.5 h-3.5" />
+                      <span>一键导出亚马逊 Bulk 表 (.xlsx)</span>
+                    </button>
+                  )}
+                  <button
+                    onClick={handleToggleFullscreen}
+                    className="flex items-center gap-1 px-2.5 py-1.5 bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-lg text-xs font-semibold transition active:scale-95"
+                    title="退出全屏 (ESC)"
+                  >
+                    <Minimize2 className="w-3.5 h-3.5" />
+                    <span>退出 (ESC)</span>
+                  </button>
+                </>
+              ) : (
+                <button
+                  onClick={handleToggleFullscreen}
+                  className="flex items-center gap-1 px-3 py-1 text-xs font-bold text-rose-700 dark:text-rose-300 bg-rose-50 dark:bg-rose-950/40 border border-rose-300 dark:border-rose-700 hover:bg-rose-100 rounded-lg transition shadow-sm"
+                  title="觉得网页滚动不方便？点击打开专属独立全屏工作台"
+                >
+                  <Maximize2 className="w-3.5 h-3.5 text-rose-500" />
+                  <span>⛶ 打开全屏工作台</span>
+                </button>
+              )}
+            </div>
+          </div>
         </div>
       )}
 
       {/* Tab 3: Harvest Table */}
       {activeTab === 'harvest' && (
-        <div className="p-4 space-y-4">
-          <div className="bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-900/30 rounded-xl p-3 text-xs text-emerald-800 dark:text-emerald-300 flex items-center gap-2">
+        <div className={`p-4 ${isFullscreen ? 'flex-1 min-h-0 flex flex-col space-y-2.5 overflow-hidden' : 'space-y-4'}`}>
+          <div className="bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-900/30 rounded-xl p-3 text-xs text-emerald-800 dark:text-emerald-300 flex items-center gap-2 flex-shrink-0">
             <Sparkles className="w-4 h-4 text-emerald-500 dark:text-emerald-400 flex-shrink-0" />
             <span>
               以下为在<strong>自动广告或广泛投放</strong>中表现亮眼的高 ROI 搜索词。建议将它们收割提取出来，单独建立<strong>「精准匹配 (Exact Match)」</strong>广告活动，并赋予更高预算！
             </span>
           </div>
 
-          <div className="max-h-[600px] 2xl:max-h-[720px] overflow-y-auto overflow-x-auto border border-slate-200 dark:border-slate-800 rounded-xl shadow-sm visible-table-scrollbar relative">
+          <div className={`${isFullscreen ? 'flex-1 min-h-0' : 'max-h-[600px] 2xl:max-h-[720px]'} overflow-y-auto overflow-x-auto border border-slate-200 dark:border-slate-800 rounded-xl shadow-sm visible-table-scrollbar relative overscroll-contain`}>
             <table className={`w-full text-left ${fontSizeClass} text-slate-600 dark:text-slate-300 whitespace-nowrap`}>
               <thead className="sticky top-0 z-10 bg-slate-100 dark:bg-slate-950 text-slate-700 dark:text-slate-300 uppercase text-[11px] font-bold border-b border-slate-300 dark:border-slate-700 shadow-sm">
                 <tr>
@@ -1441,13 +1640,54 @@ export const ActionTabs: React.FC<ActionTabsProps> = ({
               </tbody>
             </table>
           </div>
+
+          {/* Bottom Navigation & Actions for Tab 3 */}
+          <div className="flex flex-wrap items-center justify-between px-3.5 py-2.5 bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800 rounded-xl text-xs gap-2 flex-shrink-0">
+            <div className="text-slate-600 dark:text-slate-300 text-xs flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse flex-shrink-0" />
+              <span>发现 <strong className="text-emerald-600 dark:text-emerald-400 font-bold">{harvestActions.length}</strong> 个高转化优质搜索词，建议在后台建立精准广告活动放量</span>
+            </div>
+            <div className="flex items-center gap-2.5">
+              {isFullscreen ? (
+                <>
+                  {onExport && (
+                    <button
+                      onClick={onExport}
+                      className="flex items-center gap-1.5 px-4 py-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs rounded-lg transition shadow-md shadow-amber-500/20 active:scale-95"
+                      title="采用亚马逊官方标准格式（无多余工作表，防后台报错）"
+                    >
+                      <Download className="w-3.5 h-3.5" />
+                      <span>一键导出亚马逊 Bulk 表 (.xlsx)</span>
+                    </button>
+                  )}
+                  <button
+                    onClick={handleToggleFullscreen}
+                    className="flex items-center gap-1 px-2.5 py-1.5 bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-lg text-xs font-semibold transition active:scale-95"
+                    title="退出全屏 (ESC)"
+                  >
+                    <Minimize2 className="w-3.5 h-3.5" />
+                    <span>退出 (ESC)</span>
+                  </button>
+                </>
+              ) : (
+                <button
+                  onClick={handleToggleFullscreen}
+                  className="flex items-center gap-1 px-3 py-1 text-xs font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-300 dark:border-emerald-700 hover:bg-emerald-100 rounded-lg transition shadow-sm"
+                  title="觉得网页滚动不方便？点击打开专属独立全屏工作台"
+                >
+                  <Maximize2 className="w-3.5 h-3.5 text-emerald-500" />
+                  <span>⛶ 打开全屏工作台</span>
+                </button>
+              )}
+            </div>
+          </div>
         </div>
       )}
 
       {/* Tab 4: All Items Table */}
       {activeTab === 'all' && (
-        <div className="p-4 space-y-4">
-          <div className="flex flex-wrap items-center justify-between gap-3 bg-slate-50 dark:bg-slate-950/40 p-3 rounded-xl border border-slate-200 dark:border-slate-800">
+        <div className={`p-4 ${isFullscreen ? 'flex-1 min-h-0 flex flex-col space-y-2.5 overflow-hidden' : 'space-y-4'}`}>
+          <div className="flex flex-wrap items-center justify-between gap-3 bg-slate-50 dark:bg-slate-950/40 p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 flex-shrink-0">
             <div className="relative flex-1 min-w-[240px]">
               <Search className="w-4 h-4 absolute left-3 top-2.5 text-slate-400" />
               <input
@@ -1478,7 +1718,7 @@ export const ActionTabs: React.FC<ActionTabsProps> = ({
 
           <div 
             ref={allTableRef}
-            className="max-h-[600px] 2xl:max-h-[720px] overflow-y-auto overflow-x-auto border border-slate-200 dark:border-slate-800 rounded-xl shadow-sm visible-table-scrollbar relative"
+            className={`${isFullscreen ? 'flex-1 min-h-0' : 'max-h-[600px] 2xl:max-h-[720px]'} overflow-y-auto overflow-x-auto border border-slate-200 dark:border-slate-800 rounded-xl shadow-sm visible-table-scrollbar relative overscroll-contain`}
           >
             <table className={`w-full text-left ${fontSizeClass} text-slate-600 dark:text-slate-300 whitespace-nowrap`}>
               <thead className="sticky top-0 z-10 bg-slate-100 dark:bg-slate-950 text-slate-700 dark:text-slate-300 uppercase text-[11px] font-bold border-b border-slate-300 dark:border-slate-700 shadow-sm">
@@ -1609,7 +1849,7 @@ export const ActionTabs: React.FC<ActionTabsProps> = ({
           </div>
 
           {/* Requirement 2: Horizontal Scroll Navigation Bar for Tab 4 (全量列表底部明显左右滑动控制与提示) */}
-          <div className="flex flex-wrap items-center justify-between px-3.5 py-2.5 bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800 rounded-xl text-xs gap-2">
+          <div className="flex flex-wrap items-center justify-between px-3.5 py-2.5 bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800 rounded-xl text-xs gap-2 flex-shrink-0">
             <div className="flex items-center gap-2">
               <button
                 type="button"
@@ -1627,10 +1867,44 @@ export const ActionTabs: React.FC<ActionTabsProps> = ({
               >
                 <span>向右滑动 ➡️</span>
               </button>
+              <div className="hidden md:flex items-center gap-2 text-slate-500 dark:text-slate-400 text-[11px] min-w-0 truncate ml-2">
+                <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse flex-shrink-0" />
+                <span className="truncate">💡 拖动上方金色滚动条，或按键盘 <kbd className="px-1.5 py-0.5 bg-white dark:bg-slate-800 border rounded font-mono text-[10px]">Shift</kbd> + 滚轮横移</span>
+              </div>
             </div>
-            <div className="flex items-center gap-2 text-slate-500 dark:text-slate-400 text-[11px] min-w-0 truncate">
-              <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse flex-shrink-0" />
-              <span className="truncate">💡 拖动上方金色滚动条，或按键盘 <kbd className="px-1.5 py-0.5 bg-white dark:bg-slate-800 border rounded font-mono text-[10px]">Shift</kbd> + 滚轮横移查看全部数据</span>
+
+            <div className="flex items-center gap-2.5">
+              {isFullscreen ? (
+                <>
+                  {onExport && (
+                    <button
+                      onClick={onExport}
+                      className="flex items-center gap-1.5 px-4 py-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs rounded-lg transition shadow-md shadow-amber-500/20 active:scale-95"
+                      title="采用亚马逊官方标准格式导出"
+                    >
+                      <Download className="w-3.5 h-3.5" />
+                      <span>一键导出亚马逊 Bulk 表 (.xlsx)</span>
+                    </button>
+                  )}
+                  <button
+                    onClick={handleToggleFullscreen}
+                    className="flex items-center gap-1 px-2.5 py-1.5 bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-lg text-xs font-semibold transition active:scale-95"
+                    title="退出全屏 (ESC)"
+                  >
+                    <Minimize2 className="w-3.5 h-3.5" />
+                    <span>退出 (ESC)</span>
+                  </button>
+                </>
+              ) : (
+                <button
+                  onClick={handleToggleFullscreen}
+                  className="flex items-center gap-1 px-3 py-1 text-xs font-bold text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-950/40 border border-blue-300 dark:border-blue-700 hover:bg-blue-100 rounded-lg transition shadow-sm"
+                  title="打开专属独立全屏工作台"
+                >
+                  <Maximize2 className="w-3.5 h-3.5 text-blue-500" />
+                  <span>⛶ 打开全屏工作台</span>
+                </button>
+              )}
             </div>
           </div>
         </div>

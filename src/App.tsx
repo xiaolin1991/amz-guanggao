@@ -26,6 +26,7 @@ import { MetricsDashboard } from './components/MetricsDashboard';
 import { ActionTabs } from './components/ActionTabs';
 import { ExportBar } from './components/ExportBar';
 import { FloatingSupport } from './components/FloatingSupport';
+import { SlidersHorizontal } from 'lucide-react';
 
 export const App: React.FC = () => {
   // Theme state: defaults to 'light' (pure white & soft clean slate), switchable to 'dark' for night
@@ -39,6 +40,9 @@ export const App: React.FC = () => {
     const saved = localStorage.getItem('amz_full_width');
     return saved !== null ? saved === 'true' : true; // default true (wide screen mode)
   });
+
+  // Dedicated Fullscreen Workbench modal state
+  const [isFullscreenWorkspace, setIsFullscreenWorkspace] = useState<boolean>(false);
 
   // History records list
   const [historyRecords, setHistoryRecords] = useState<HistoryRecord[]>([]);
@@ -439,14 +443,26 @@ export const App: React.FC = () => {
             {/* Metrics Dashboard with 1-click Toggle to expand table workspace */}
             <div className="space-y-3">
               <div className="flex flex-wrap items-center justify-between gap-3 bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2 text-xs shadow-sm">
-                <button
-                  type="button"
-                  onClick={() => setIsDashboardVisible(prev => !prev)}
-                  className="inline-flex items-center gap-1.5 px-3 py-1 text-xs font-bold text-slate-700 hover:text-slate-900 dark:text-slate-200 dark:hover:text-white bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 rounded-lg transition active:scale-95 shadow-sm"
-                  title="点击可一键收起或展开图表大盘，腾出大面积垂直视野专心调价"
-                >
-                  <span>{isDashboardVisible ? '🔼 收起大盘图表 (最大化报表视野)' : '🔽 展开大盘图表 (查看核心诊断卡)'}</span>
-                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setIsDashboardVisible(prev => !prev)}
+                    className="inline-flex items-center gap-1.5 px-3 py-1 text-xs font-bold text-slate-700 hover:text-slate-900 dark:text-slate-200 dark:hover:text-white bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 rounded-lg transition active:scale-95 shadow-sm"
+                    title="点击可一键收起或展开图表大盘，腾出大面积垂直视野专心调价"
+                  >
+                    <span>{isDashboardVisible ? '🔼 收起大盘图表' : '🔽 展开大盘图表'}</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setIsFullscreenWorkspace(true)}
+                    className="inline-flex items-center gap-1.5 px-3 py-1 text-xs font-bold text-amber-800 dark:text-amber-300 bg-amber-100 hover:bg-amber-200 dark:bg-amber-950/60 dark:hover:bg-amber-900/60 border border-amber-300 dark:border-amber-700 rounded-lg transition active:scale-95 shadow-sm"
+                    title="打开专属独立全屏调价工作台：彻底解决网页滚动冲突，表头与调价工具永远置顶！"
+                  >
+                    <SlidersHorizontal className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
+                    <span>⛶ 独立全屏调价工作台 (推荐)</span>
+                  </button>
+                </div>
 
                 <div className="flex flex-wrap items-center gap-3 text-xs font-mono text-slate-600 dark:text-slate-400">
                   <span>广告总花费: <strong className="text-rose-600">${summary.totalSpend.toFixed(2)}</strong></span>
@@ -481,17 +497,25 @@ export const App: React.FC = () => {
               onResetBidsToSuggested={handleResetBidsToSuggested}
               isFullWidth={isFullWidth}
               onToggleFullWidth={() => setIsFullWidth(!isFullWidth)}
-            />
-
-            {/* Bottom Export Bar */}
-            <ExportBar
-              bidActions={bidActions}
-              negativeActions={negativeActions}
-              harvestActions={harvestActions}
+              isFullscreenWorkspace={isFullscreenWorkspace}
+              onToggleFullscreenWorkspace={() => setIsFullscreenWorkspace(prev => !prev)}
+              fileName={fileName}
               onExport={handleExport}
               onExportReview={handleExportReview}
               onOpenTutorial={() => setIsTutorialOpen(true)}
             />
+
+            {/* Bottom Export Bar (only in normal embedded mode) */}
+            {!isFullscreenWorkspace && (
+              <ExportBar
+                bidActions={bidActions}
+                negativeActions={negativeActions}
+                harvestActions={harvestActions}
+                onExport={handleExport}
+                onExportReview={handleExportReview}
+                onOpenTutorial={() => setIsTutorialOpen(true)}
+              />
+            )}
           </>
         )}
       </main>
