@@ -97,12 +97,8 @@ export function exportUpdatedBulkFile(
       const newWorksheet = XLSX.utils.json_to_sheet(originalRows);
       XLSX.utils.book_append_sheet(exportWorkbook, newWorksheet, targetSheetName);
 
-      // Copy other original sheets if present (e.g., Portfolios)
-      parseResult.workbook.SheetNames.forEach(sheet => {
-        if (sheet !== targetSheetName && parseResult.workbook.Sheets[sheet]) {
-          XLSX.utils.book_append_sheet(exportWorkbook, parseResult.workbook.Sheets[sheet], sheet);
-        }
-      });
+      // NOTE: Strictly DO NOT copy other auxiliary sheets (such as 'Config', 'Sheet11', 'Search Term Report').
+      // Amazon Bulk Operations rejects uploads if non-entity sheets are present with error: "标头无效, 工作表中的列标题无效".
     } else {
       // Original was a Targeting CSV or report without Product/Entity/Operation headers.
       // We generate the STRICT Amazon Bulksheet 2.0/3.0 format:

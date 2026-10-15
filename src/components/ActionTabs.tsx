@@ -1020,8 +1020,8 @@ export const ActionTabs: React.FC<ActionTabsProps> = ({
                     </button>
                   </th>
 
-                  {renderSortHeader('关键词 / 投放', 'keywordText')}
-                  {colVis.matchType && renderSortHeader('投放匹配类型', 'matchType')}
+                  {renderSortHeader('关键词 / 投放', 'keywordText', 'min-w-[220px]')}
+                  {colVis.matchType && renderSortHeader('投放匹配类型', 'matchType', 'min-w-[130px]')}
                   {colVis.currentBid && renderSortHeader('原出价 (USD)', 'currentBid')}
                   {colVis.userCustomBid && renderSortHeader('最终出价 (自由微调)', 'userCustomBid', 'text-amber-600 dark:text-amber-400')}
                   {colVis.amazonSuggested && renderSortHeader('建议竞价 (区间)', 'suggestedBidMed')}
@@ -1066,7 +1066,7 @@ export const ActionTabs: React.FC<ActionTabsProps> = ({
                       </td>
 
                       {/* Requirement 3.3: Click Keyword to Copy (图四) */}
-                      <td className={`${cellPadding} font-sans font-semibold text-slate-900 dark:text-white max-w-[260px]`}>
+                      <td className={`${cellPadding} font-sans font-semibold text-slate-900 dark:text-white min-w-[220px] max-w-[340px]`}>
                         <div 
                           onClick={() => handleCopyKeyword(action.item.keywordText)}
                           className="flex items-center gap-1.5 group cursor-pointer hover:text-amber-600 dark:hover:text-amber-400 transition"
@@ -1074,7 +1074,7 @@ export const ActionTabs: React.FC<ActionTabsProps> = ({
                         >
                           <span className="truncate">{action.item.keywordText}</span>
                           {copiedKeyword === action.item.keywordText ? (
-                            <span className="inline-flex items-center gap-0.5 text-[10px] text-emerald-600 font-bold bg-emerald-50 dark:bg-emerald-950/30 px-1 py-0.2 rounded border border-emerald-200">
+                            <span className="inline-flex items-center gap-0.5 text-[10px] text-emerald-600 font-bold bg-emerald-50 dark:bg-emerald-950/30 px-1 py-0.2 rounded border border-emerald-200 flex-shrink-0">
                               <Check className="w-3 h-3" /> 已复制
                             </span>
                           ) : (
@@ -1085,8 +1085,8 @@ export const ActionTabs: React.FC<ActionTabsProps> = ({
 
                       {/* Match Type */}
                       {colVis.matchType && (
-                        <td className={`${cellPadding} font-sans`}>
-                          <span className="px-2 py-0.5 rounded text-[10px] bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+                        <td className={`${cellPadding} font-sans min-w-[130px] whitespace-nowrap`}>
+                          <span className="px-2 py-0.5 rounded text-[10px] whitespace-nowrap bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
                             {action.item.matchTypeDisplay}
                           </span>
                         </td>
@@ -1483,8 +1483,8 @@ export const ActionTabs: React.FC<ActionTabsProps> = ({
             <table className={`w-full text-left ${fontSizeClass} text-slate-600 dark:text-slate-300 whitespace-nowrap`}>
               <thead className="sticky top-0 z-10 bg-slate-100 dark:bg-slate-950 text-slate-700 dark:text-slate-300 uppercase text-[11px] font-bold border-b border-slate-300 dark:border-slate-700 shadow-sm">
                 <tr>
-                  <th className={cellPadding}>关键词 / 投放</th>
-                  <th className={cellPadding}>投放匹配类型</th>
+                  <th className={`${cellPadding} min-w-[220px]`}>关键词 / 投放</th>
+                  <th className={`${cellPadding} min-w-[130px]`}>投放匹配类型</th>
                   <th className={cellPadding}>状态</th>
                   {renderSortHeader('竞价 (USD)', 'currentBid')}
                   {renderSortHeader('展示量 (曝光)', 'impressions')}
@@ -1509,7 +1509,7 @@ export const ActionTabs: React.FC<ActionTabsProps> = ({
 
                   return (
                     <tr key={`${item.id}_${item.originalRowIndex}`} className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition">
-                      <td className={`${cellPadding} font-sans font-bold text-slate-900 dark:text-white max-w-[200px] truncate`}>
+                      <td className={`${cellPadding} font-sans font-bold text-slate-900 dark:text-white min-w-[220px] max-w-[340px]`}>
                         <div 
                           onClick={() => handleCopyKeyword(item.keywordText)}
                           className="flex items-center gap-1.5 group cursor-pointer hover:text-blue-600 dark:hover:text-blue-400 transition"
@@ -1517,7 +1517,7 @@ export const ActionTabs: React.FC<ActionTabsProps> = ({
                         >
                           <span className="truncate">{item.keywordText}</span>
                           {copiedKeyword === item.keywordText ? (
-                            <span className="inline-flex items-center gap-0.5 text-[10px] text-emerald-600 font-bold bg-emerald-50 dark:bg-emerald-950/30 px-1 py-0.2 rounded border border-emerald-200">
+                            <span className="inline-flex items-center gap-0.5 text-[10px] text-emerald-600 font-bold bg-emerald-50 dark:bg-emerald-950/30 px-1 py-0.2 rounded border border-emerald-200 flex-shrink-0">
                               <Check className="w-3 h-3" /> 已复制
                             </span>
                           ) : (
@@ -1525,8 +1525,8 @@ export const ActionTabs: React.FC<ActionTabsProps> = ({
                           )}
                         </div>
                       </td>
-                      <td className={`${cellPadding} font-sans`}>
-                        <span className="px-2 py-0.5 rounded text-[10px] bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
+                      <td className={`${cellPadding} font-sans min-w-[130px] whitespace-nowrap`}>
+                        <span className="px-2 py-0.5 rounded text-[10px] whitespace-nowrap bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
                           {item.matchTypeDisplay}
                         </span>
                       </td>
