@@ -57,7 +57,7 @@ export function exportUpdatedBulkFile(
       originalRows.forEach((row, index) => {
         if (bidUpdatesMap.has(index)) {
           const newBid = bidUpdatesMap.get(index);
-          const bidKey = Object.keys(row).find(k => k.trim().toLowerCase() === 'bid' || k.trim().toLowerCase() === '出价') || 'Bid';
+          const bidKey = Object.keys(row).find(k => ['bid', '出价', '竞价'].includes(k.trim().toLowerCase())) || '竞价';
           row[bidKey] = newBid;
 
           const opKey = Object.keys(row).find(k => k.trim().toLowerCase() === 'operation' || k.trim().toLowerCase() === '操作') || 'Operation';

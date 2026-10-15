@@ -25,9 +25,11 @@ function findMatchingKey(rowKeys: string[], candidates: string[]): string | unde
 
 function getRowValue(row: RawBulkRow, candidates: string[]): any {
   const rowKeys = Object.keys(row);
-  const matchedKey = findMatchingKey(rowKeys, candidates);
-  if (matchedKey && row[matchedKey] !== undefined && row[matchedKey] !== '') {
-    return row[matchedKey];
+  for (const c of candidates) {
+    const matchedKey = findMatchingKey(rowKeys, [c]);
+    if (matchedKey && row[matchedKey] !== undefined && String(row[matchedKey]).trim() !== '') {
+      return row[matchedKey];
+    }
   }
   return undefined;
 }
@@ -43,9 +45,13 @@ function parseNumber(val: any, fallback = 0): number {
 function formatMatchTypeDisplay(raw: string): string {
   const lower = raw.trim().toLowerCase();
   if (lower.includes('精准') || lower === 'exact') return '精准 (Exact)';
-  if (lower.includes('短语') || lower === 'phrase') return '短语 (Phrase)';
+  if (lower.includes('短语') || lower.includes('词组') || lower === 'phrase') return '短语 (Phrase)';
   if (lower.includes('广泛') || lower === 'broad') return '广泛 (Broad)';
-  if (lower.includes('asin') || lower.includes('商品') || lower.includes('targeting')) return '商品投放 (ASIN)';
+  if (lower.includes('close-match') || lower.includes('紧密')) return '自动: 紧密匹配 (Close)';
+  if (lower.includes('loose-match') || lower.includes('宽泛')) return '自动: 宽泛匹配 (Loose)';
+  if (lower.includes('substitutes') || lower.includes('同类') || lower.includes('替代')) return '自动: 同类商品 (Substitutes)';
+  if (lower.includes('complements') || lower.includes('关联')) return '自动: 关联商品 (Complements)';
+  if (lower.includes('asin') || lower.includes('商品') || lower.includes('targeting') || lower.includes('定向')) return '商品投放 (ASIN)';
   return raw || '广泛 (Broad)';
 }
 
@@ -92,30 +98,46 @@ export function parseAmazonExcel(fileBuffer: ArrayBuffer, fileNameFallback?: str
 
   // Candidate field names covering both Amazon Bulk Sheet and Seller Central Target/Search Term exports
   const CANDIDATES = {
-    entity: ['entity', '实体', '记录类型', 'record type'],
+    entity: ['entity', '实体层级', '实体', '记录类型', 'record type'],
     campaignId: ['campaign id', '广告活动编号', '广告活动 id', 'campaignid'],
-    campaignName: ['campaign name', '广告活动名称', '广告活动', 'campaign name (informational only)'],
+    campaignName: ['campaign name', '广告活动名称（仅供参考）', '广告活动名称', '广告活动', 'campaign name (informational only)'],
     adGroupId: ['ad group id', '广告组编号', '广告组 id', 'adgroupid'],
-    adGroupName: ['ad group name', '广告组名称', '广告组', 'ad group name (informational only)'],
-    keywordId: ['keyword id', '关键词编号', '关键词 id', 'keywordid', 'target id', '投放编号'],
+    adGroupName: ['ad group name', '广告组名称（仅供参考）', '广告组名称', '广告组', 'ad group name (informational only)'],
+    keywordId: [
+      'keyword id', 
+      '关键词编号', 
+      '关键词 id', 
+      '商品投放 id', 
+      '商品投放编号', 
+      '商品定向编号', 
+      '商品定向 id', 
+      'target id', 
+      '投放编号', 
+      'keywordid'
+    ],
     
     keywordText: [
+      '关键词文本',
       '关键词',
       'keyword text',
       'keyword',
       'customer search term',
       '客户搜索词',
+      '顾客搜索词',
+      '拓展商品投放名称（仅供参考）',
+      '拓展商品投放编号',
+      '已解析的投放表达式（仅供参考）',
+      '商品投放表达式',
       'keyword or product targeting',
       '关键词或商品投放',
       'product targeting expression',
-      '商品投放表达式',
       'targeting expression'
     ],
-    matchType: ['投放匹配类型', '匹配类型', 'match type', 'matchtype'],
+    matchType: ['匹配类型', '投放匹配类型', 'match type', 'matchtype'],
     state: ['状态', 'state', 'status'],
     
     // Bid & Suggested Bids
-    bid: ['竞价 (usd)', '竞价', '出价 (usd)', '出价', 'bid', 'keyword bid', 'bid (informational only)', 'max cpc'],
+    bid: ['竞价', '出价', '竞价 (usd)', '出价 (usd)', 'bid', 'keyword bid', 'bid (informational only)', 'max cpc', '广告组默认竞价（仅供参考）', '广告组默认竞价'],
     suggestedBidLow: ['建议竞价 (低)(usd)', '建议竞价 (低)', 'suggested bid (low)'],
     suggestedBidMed: ['建议竞价 (中)(usd)', '建议竞价 (中)', 'suggested bid (median)'],
     suggestedBidHigh: ['建议竞价 (高)(usd)', '建议竞价 (高)', 'suggested bid (high)'],
@@ -123,18 +145,19 @@ export function parseAmazonExcel(fileBuffer: ArrayBuffer, fileNameFallback?: str
     // Impression & Share
     impressions: ['展示量', '曝光量', '展现量', 'impressions', '展示'],
     topOfSearchShare: ['搜索结果首页首位展示量份额', 'top-of-search impression share', '首页展示份额'],
-    campaignStatusDetail: ['状态_1', '广告活动状态', 'campaign status detail'],
+    campaignStatusDetail: ['状态_1', '广告活动状态', '广告活动状态（仅供参考）', 'campaign status detail'],
 
     // Clicks & CTR
     clicks: ['点击量', '点击数', 'clicks', '点击'],
     ctr: ['点击率', 'ctr'],
 
     // Spend & CPC
-    spend: ['总成本 (usd)', '总成本', '花费 (usd)', '花费', '支出 (usd)', '支出', 'spend', 'cost'],
-    cpc: ['cpc (usd)', 'cpc', '平均每次点击费用', 'cost per click'],
+    spend: ['花费', '总成本 (usd)', '总成本', '花费 (usd)', '支出 (usd)', '支出', 'spend', 'cost'],
+    cpc: ['cpc', 'cpc (usd)', '平均每次点击费用', 'cost per click'],
 
     // Orders & Sales
     orders: [
+      '订单数量',
       '购买量',
       '7天总订单量(#)',
       '14天总订单量(#)',
@@ -147,6 +170,7 @@ export function parseAmazonExcel(fileBuffer: ArrayBuffer, fileNameFallback?: str
       '7-day total orders (#)'
     ],
     sales: [
+      '销量',
       '销售额 (usd)',
       '销售额',
       '7天总销售额($)',
@@ -167,20 +191,29 @@ export function parseAmazonExcel(fileBuffer: ArrayBuffer, fileNameFallback?: str
     : '商品推广 (SP投放)';
 
   rawRows.forEach((row, index) => {
-    const keywordTextRaw = getRowValue(row, CANDIDATES.keywordText);
+    let keywordTextRaw = getRowValue(row, CANDIDATES.keywordText);
     const entityRaw = String(getRowValue(row, CANDIDATES.entity) || '').trim();
 
     // Determine Entity
     let entity: any = 'Other';
     const lowerEntity = entityRaw.toLowerCase();
     if (lowerEntity.includes('campaign negative keyword')) entity = 'Campaign Negative Keyword';
-    else if (lowerEntity.includes('negative keyword') || lowerEntity.includes('否定关键词')) entity = 'Negative Keyword';
+    else if (lowerEntity.includes('negative keyword') || lowerEntity.includes('否定关键词') || lowerEntity.includes('否定商品定向') || lowerEntity.includes('否定商品投放')) entity = 'Negative Keyword';
     else if (lowerEntity.includes('keyword') || lowerEntity.includes('关键词')) entity = 'Keyword';
-    else if (lowerEntity.includes('product targeting') || lowerEntity.includes('商品投放')) entity = 'Product Targeting';
+    else if (lowerEntity.includes('product targeting') || lowerEntity.includes('商品投放') || lowerEntity.includes('商品定向')) entity = 'Product Targeting';
     else if (lowerEntity.includes('campaign') || lowerEntity.includes('广告活动')) entity = 'Campaign';
     else if (lowerEntity.includes('ad group') || lowerEntity.includes('广告组')) entity = 'Ad Group';
     else if (keywordTextRaw) {
       entity = 'Keyword';
+    }
+
+    if (!keywordTextRaw && entity === 'Product Targeting') {
+      keywordTextRaw = getRowValue(row, [
+        '拓展商品投放名称（仅供参考）',
+        '拓展商品投放编号',
+        '已解析的投放表达式（仅供参考）',
+        '商品投放表达式'
+      ]) || '商品定向 (Auto/ASIN)';
     }
 
     const isTargeting = entity === 'Keyword' || entity === 'Product Targeting';

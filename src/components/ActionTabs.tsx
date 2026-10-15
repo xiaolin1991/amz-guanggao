@@ -1259,9 +1259,9 @@ export const ActionTabs: React.FC<ActionTabsProps> = ({
                 <span>向右滑动 ➡️</span>
               </button>
             </div>
-            <div className="flex items-center gap-2 text-slate-500 dark:text-slate-400 text-[11px]">
-              <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
-              <span>💡 提示：可直接拖动上方显眼的金色横向滚动条，或按键盘 <kbd className="px-1.5 py-0.5 bg-white dark:bg-slate-800 border rounded font-mono text-[10px]">Shift</kbd> + 滚轮平滑横移查看全部 15 项数据</span>
+            <div className="flex items-center gap-2 text-slate-500 dark:text-slate-400 text-[11px] min-w-0 truncate">
+              <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse flex-shrink-0" />
+              <span className="truncate">💡 拖动上方金色滚动条，或按键盘 <kbd className="px-1.5 py-0.5 bg-white dark:bg-slate-800 border rounded font-mono text-[10px]">Shift</kbd> + 滚轮横移查看全部数据</span>
             </div>
           </div>
         </div>
@@ -1628,9 +1628,9 @@ export const ActionTabs: React.FC<ActionTabsProps> = ({
                 <span>向右滑动 ➡️</span>
               </button>
             </div>
-            <div className="flex items-center gap-2 text-slate-500 dark:text-slate-400 text-[11px]">
-              <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
-              <span>💡 提示：可直接拖动上方显眼的金色横向滚动条，或按键盘 <kbd className="px-1.5 py-0.5 bg-white dark:bg-slate-800 border rounded font-mono text-[10px]">Shift</kbd> + 滚轮平滑横移查看全部 16 列数据</span>
+            <div className="flex items-center gap-2 text-slate-500 dark:text-slate-400 text-[11px] min-w-0 truncate">
+              <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse flex-shrink-0" />
+              <span className="truncate">💡 拖动上方金色滚动条，或按键盘 <kbd className="px-1.5 py-0.5 bg-white dark:bg-slate-800 border rounded font-mono text-[10px]">Shift</kbd> + 滚轮横移查看全部数据</span>
             </div>
           </div>
         </div>

@@ -84,6 +84,7 @@ export const App: React.FC = () => {
   const [fileName, setFileName] = useState<string>('');
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [isTutorialOpen, setIsTutorialOpen] = useState<boolean>(false);
+  const [isDashboardVisible, setIsDashboardVisible] = useState<boolean>(true);
 
   // Custom action states overrides (selected, userCustomBid)
   const [customBidOverrides, setCustomBidOverrides] = useState<Record<string, number>>({});
@@ -435,8 +436,33 @@ export const App: React.FC = () => {
             {/* Config Control Bar */}
             <ConfigBar config={config} onChange={setConfig} />
 
-            {/* Metrics Dashboard */}
-            <MetricsDashboard summary={summary} config={config} />
+            {/* Metrics Dashboard with 1-click Toggle to expand table workspace */}
+            <div className="space-y-3">
+              <div className="flex flex-wrap items-center justify-between gap-3 bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2 text-xs shadow-sm">
+                <button
+                  type="button"
+                  onClick={() => setIsDashboardVisible(prev => !prev)}
+                  className="inline-flex items-center gap-1.5 px-3 py-1 text-xs font-bold text-slate-700 hover:text-slate-900 dark:text-slate-200 dark:hover:text-white bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 rounded-lg transition active:scale-95 shadow-sm"
+                  title="点击可一键收起或展开图表大盘，腾出大面积垂直视野专心调价"
+                >
+                  <span>{isDashboardVisible ? '🔼 收起大盘图表 (最大化报表视野)' : '🔽 展开大盘图表 (查看核心诊断卡)'}</span>
+                </button>
+
+                <div className="flex flex-wrap items-center gap-3 text-xs font-mono text-slate-600 dark:text-slate-400">
+                  <span>广告总花费: <strong className="text-rose-600">${summary.totalSpend.toFixed(2)}</strong></span>
+                  <span>·</span>
+                  <span>总销售额: <strong className="text-slate-900 dark:text-white">${summary.totalSales.toFixed(2)}</strong></span>
+                  <span>·</span>
+                  <span>整体ACOS: <strong className={summary.overallAcos > 28 ? 'text-rose-600' : 'text-emerald-600'}>{summary.overallAcos}%</strong></span>
+                  <span>·</span>
+                  <span>建议调价: <strong className="text-amber-600">{bidActions.length}项</strong></span>
+                  <span>·</span>
+                  <span>建议否定: <strong className="text-rose-600">{negativeActions.length}个</strong></span>
+                </div>
+              </div>
+
+              {isDashboardVisible && <MetricsDashboard summary={summary} config={config} />}
+            </div>
 
             {/* Action Tables */}
             <ActionTabs
