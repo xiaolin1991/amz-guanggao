@@ -1,0 +1,1725 @@
+/* 晓林广告助手 - 页面注入核心样式表 (v1.3.0 极简居中 & 智能自适应版) */
+
+/* ==========================================================
+   0. 全局样式重置与样式隔离 (彻底防止宿主页面 CSS 污染)
+   ========================================================== */
+#xl-floating-panel,
+#xl-floating-launcher {
+  all: initial;
+  box-sizing: border-box !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important;
+}
+
+#xl-floating-panel *,
+#xl-floating-launcher * {
+  box-sizing: border-box !important;
+  font-family: inherit !important;
+}
+
+/* ==========================================================
+   1. 悬浮启动球 (纯图标极简圆形悬浮徽标，支持全局自由拖拽)
+   ========================================================== */
+.xl-launcher-pill {
+  position: fixed !important;
+  bottom: 40px !important;
+  right: 25px !important;
+  width: 48px !important;
+  height: 48px !important;
+  border-radius: 50% !important;
+  z-index: 2147483647 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 0 !important;
+  cursor: grab !important;
+  user-select: none !important;
+  touch-action: none !important;
+  transition: transform 0.2s ease, box-shadow 0.2s ease !important;
+}
+
+.xl-launcher-pill:hover {
+  transform: scale(1.08) !important;
+}
+
+.xl-launcher-pill:active,
+.xl-launcher-pill.xl-launcher-dragging {
+  cursor: grabbing !important;
+  transform: scale(1.12) !important;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.35), 0 0 18px rgba(245, 158, 11, 0.6) !important;
+}
+
+.xl-launcher-logo {
+  width: 32px !important;
+  height: 32px !important;
+  object-fit: contain !important;
+  margin: 0 !important;
+}
+
+/* 隐藏长文本标签，实现纯图标极简显示 */
+.xl-launcher-title,
+.xl-launcher-status-text {
+  display: none !important;
+}
+
+/* 悬浮球右上角报警角标 */
+.xl-launcher-badge {
+  position: absolute !important;
+  top: -4px !important;
+  right: -4px !important;
+  background: #ef4444 !important;
+  color: #fff !important;
+  font-size: 11px !important;
+  font-weight: 800 !important;
+  padding: 1px 6px !important;
+  border-radius: 10px !important;
+  border: 2px solid #fff !important;
+  display: none;
+  animation: pulse 2s infinite !important;
+}
+
+@keyframes pulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.15); }
+  100% { transform: scale(1); }
+}
+
+/* 启动球默认亮色主题 */
+.xl-launcher-pill.xl-theme-light {
+  background: #ffffff !important;
+  border: 2px solid #f59e0b !important;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15), 0 0 10px rgba(245, 158, 11, 0.3) !important;
+}
+
+/* 启动球暗黑主题 */
+.xl-launcher-pill.xl-theme-dark {
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%) !important;
+  border: 2px solid #f59e0b !important;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.5), 0 0 12px rgba(245, 158, 11, 0.4) !important;
+}
+
+/* 启动球暂停状态 */
+.xl-launcher-pill.xl-status-paused {
+  opacity: 0.75 !important;
+  filter: grayscale(0.8) !important;
+  border-color: #94a3b8 !important;
+}
+
+/* ==========================================================
+   2. 悬浮主面板容器 (靠右侧居中显示，避免遮挡顶部菜单与财务卡片)
+   ========================================================== */
+.xl-panel-container {
+  position: fixed !important;
+  top: 50% !important;
+  right: 20px !important;
+  transform: translateY(-50%) !important; /* 关键：垂直居中 */
+  width: 450px !important;
+  max-height: 82vh !important;
+  z-index: 2147483646 !important;
+  border-radius: 12px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  overflow: hidden !important;
+  font-size: 13px !important;
+  transition: opacity 0.2s ease, transform 0.2s ease !important;
+}
+
+.xl-panel-container.xl-panel-hidden {
+  display: none !important;
+}
+
+.xl-panel-header {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  padding: 10px 14px !important;
+  cursor: move !important;
+  user-select: none !important;
+}
+
+.xl-brand {
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+}
+
+.xl-brand-icon {
+  width: 30px !important;
+  height: 30px !important;
+  object-fit: contain !important;
+}
+
+.xl-brand-title {
+  font-size: 15px !important;
+  font-weight: 800 !important;
+}
+
+.xl-brand-sub {
+  font-size: 10px !important;
+}
+
+.xl-header-actions {
+  display: flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+}
+
+.xl-btn-header-toggle {
+  border: none !important;
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  padding: 3px 8px !important;
+  border-radius: 12px !important;
+  cursor: pointer !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 4px !important;
+}
+
+.xl-btn-theme-switch {
+  border: 1px solid transparent !important;
+  font-size: 11px !important;
+  font-weight: 600 !important;
+  padding: 3px 8px !important;
+  border-radius: 6px !important;
+  cursor: pointer !important;
+}
+
+.xl-btn-icon {
+  border: none !important;
+  width: 26px !important;
+  height: 26px !important;
+  border-radius: 6px !important;
+  cursor: pointer !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  font-size: 12px !important;
+}
+
+/* 导航标签 */
+.xl-tabs {
+  display: flex !important;
+  overflow-x: auto !important;
+}
+
+.xl-tab-item {
+  flex: 1 !important;
+  background: transparent !important;
+  border: none !important;
+  border-bottom: 2px solid transparent !important;
+  padding: 9px 4px !important;
+  font-size: 11px !important;
+  font-weight: 600 !important;
+  cursor: pointer !important;
+  white-space: nowrap !important;
+  text-align: center !important;
+}
+
+/* 面板主体 */
+.xl-panel-body {
+  padding: 14px !important;
+  overflow-y: auto !important;
+  max-height: calc(82vh - 110px) !important;
+}
+
+.xl-panel-body::-webkit-scrollbar {
+  width: 6px !important;
+}
+.xl-panel-body::-webkit-scrollbar-thumb {
+  border-radius: 3px !important;
+}
+
+.xl-tab-content {
+  display: none !important;
+}
+.xl-tab-content.active {
+  display: block !important;
+}
+
+/* 指标切换控制器 (ACoS vs ROAS) */
+.xl-metric-toggle-bar {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  padding: 6px 10px !important;
+  border-radius: 6px !important;
+  margin-bottom: 10px !important;
+}
+
+.xl-metric-toggle-title {
+  font-size: 11px !important;
+  font-weight: 600 !important;
+}
+
+.xl-toggle-group {
+  display: flex !important;
+  border-radius: 4px !important;
+  padding: 2px !important;
+}
+
+.xl-toggle-btn {
+  background: transparent !important;
+  border: none !important;
+  padding: 2px 10px !important;
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  cursor: pointer !important;
+  border-radius: 3px !important;
+}
+
+.xl-toggle-btn.active {
+  background: #f59e0b !important;
+  color: #0f172a !important;
+}
+
+/* 汇总条 */
+.xl-summary-banner {
+  display: grid !important;
+  grid-template-columns: 1fr 1fr 1fr !important;
+  gap: 8px !important;
+  margin-bottom: 12px !important;
+}
+
+.xl-summary-item {
+  border-radius: 8px !important;
+  padding: 8px 6px !important;
+  text-align: center !important;
+}
+
+.xl-summary-item.danger { border: 1px solid rgba(239, 68, 68, 0.4) !important; }
+.xl-summary-item.warning { border: 1px solid rgba(245, 158, 11, 0.4) !important; }
+.xl-summary-item.success { border: 1px solid rgba(16, 185, 129, 0.4) !important; }
+
+.xl-sum-num {
+  font-size: 18px !important;
+  font-weight: 800 !important;
+}
+.danger .xl-sum-num { color: #ef4444 !important; }
+.warning .xl-sum-num { color: #f59e0b !important; }
+.success .xl-sum-num { color: #10b981 !important; }
+
+.xl-sum-label {
+  font-size: 10px !important;
+  margin-top: 2px !important;
+}
+
+.xl-actions-bar {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 6px !important;
+  margin-bottom: 12px !important;
+}
+
+.xl-btn {
+  border: none !important;
+  border-radius: 6px !important;
+  padding: 8px 12px !important;
+  font-size: 12px !important;
+  font-weight: 700 !important;
+  cursor: pointer !important;
+  text-align: center !important;
+}
+
+.xl-btn-danger {
+  background: #dc2626 !important;
+  color: #fff !important;
+}
+
+.xl-btn-primary {
+  background: #f59e0b !important;
+  color: #0f172a !important;
+}
+
+.xl-diag-list {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 8px !important;
+}
+
+.xl-empty-state {
+  text-align: center !important;
+  padding: 14px 10px !important;
+  font-size: 12px !important;
+  line-height: 1.5 !important;
+  border-radius: 8px !important;
+}
+
+.xl-diag-card {
+  border-radius: 8px !important;
+  padding: 10px !important;
+}
+
+.xl-diag-card-danger { border-left: 4px solid #ef4444 !important; }
+.xl-diag-card-warning { border-left: 4px solid #f59e0b !important; }
+.xl-diag-card-success { border-left: 4px solid #10b981 !important; }
+
+.xl-card-header {
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+  margin-bottom: 4px !important;
+}
+
+.xl-card-kw-wrap {
+  display: flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  max-width: 72% !important;
+  min-width: 0 !important;
+}
+
+.xl-card-kw {
+  font-weight: 700 !important;
+  font-size: 13px !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+  color: #1e293b !important;
+}
+
+.xl-btn-locate {
+  background: #f1f5f9 !important;
+  border: 1px solid #cbd5e1 !important;
+  color: #0284c7 !important;
+  font-size: 10px !important;
+  font-weight: 700 !important;
+  padding: 1px 6px !important;
+  border-radius: 4px !important;
+  cursor: pointer !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 2px !important;
+  transition: all 0.15s ease !important;
+  white-space: nowrap !important;
+  line-height: 16px !important;
+}
+
+.xl-btn-locate:hover {
+  background: #0284c7 !important;
+  color: #ffffff !important;
+  border-color: #0284c7 !important;
+  box-shadow: 0 1px 4px rgba(2, 132, 199, 0.3) !important;
+  transform: translateY(-1px) !important;
+}
+
+/* 顶部极速全表快扫按钮 */
+.xl-btn-header-scan {
+  background: #0284c7 !important;
+  color: #ffffff !important;
+  border: 1px solid #0284c7 !important;
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  padding: 3px 8px !important;
+  border-radius: 4px !important;
+  cursor: pointer !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 3px !important;
+  transition: all 0.15s ease !important;
+}
+
+.xl-btn-header-scan:hover {
+  background: #0369a1 !important;
+  box-shadow: 0 2px 6px rgba(2, 132, 199, 0.35) !important;
+}
+
+/* 亚马逊表格行高亮脉冲 (施加在每个 td/th 上，彻底解决 tr 无法渲染 outline 与 background 的缺陷) */
+@keyframes xlCellRowPulse {
+  0% {
+    background-color: #fef08a !important;
+  }
+  30% {
+    background-color: #fde047 !important;
+  }
+  70% {
+    background-color: #fef9c3 !important;
+  }
+  100% {
+    background-color: transparent !important;
+  }
+}
+
+.xl-row-highlight-pulse {
+  animation: xlCellRowPulse 5.5s ease-in-out !important;
+}
+
+/* 核心：关键词单元格专属超级醒目“准星对焦框” (Focus Box) */
+@keyframes xlKwCellFocusGlow {
+  0% {
+    outline: 3.5px solid #f59e0b !important;
+    outline-offset: -3px !important;
+    box-shadow: 0 0 0 5px rgba(245, 158, 11, 0.45), inset 0 0 16px rgba(245, 158, 11, 0.3) !important;
+    background-color: #fef3c7 !important;
+  }
+  25% {
+    outline: 4px solid #d97706 !important;
+    outline-offset: -3px !important;
+    box-shadow: 0 0 0 7px rgba(217, 119, 6, 0.6), inset 0 0 22px rgba(217, 119, 6, 0.45) !important;
+    background-color: #fde68a !important;
+  }
+  50% {
+    outline: 3.5px solid #f59e0b !important;
+    outline-offset: -3px !important;
+    box-shadow: 0 0 0 5px rgba(245, 158, 11, 0.45), inset 0 0 16px rgba(245, 158, 11, 0.3) !important;
+    background-color: #fef3c7 !important;
+  }
+  75% {
+    outline: 4px solid #d97706 !important;
+    outline-offset: -3px !important;
+    box-shadow: 0 0 0 7px rgba(217, 119, 6, 0.6), inset 0 0 22px rgba(217, 119, 6, 0.45) !important;
+    background-color: #fde68a !important;
+  }
+  100% {
+    outline: 2.5px solid #f59e0b !important;
+    outline-offset: -2.5px !important;
+    box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.3) !important;
+    background-color: #fef3c7 !important;
+  }
+}
+
+.xl-kw-cell-focused {
+  animation: xlKwCellFocusGlow 5.5s cubic-bezier(0.25, 1, 0.5, 1) forwards !important;
+  position: relative !important;
+  z-index: 100 !important;
+}
+
+/* 单元格内部注入的醒目标记小胶囊 */
+.xl-kw-focus-flag {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 2px !important;
+  background: #d97706 !important;
+  color: #ffffff !important;
+  font-size: 10px !important;
+  font-weight: 800 !important;
+  padding: 1px 6px !important;
+  border-radius: 4px !important;
+  margin-left: 6px !important;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25) !important;
+  animation: xlFlagPulse 1.2s infinite alternate ease-in-out !important;
+  vertical-align: middle !important;
+}
+
+@keyframes xlFlagPulse {
+  0% { transform: scale(0.95); opacity: 0.9; }
+  100% { transform: scale(1.08); opacity: 1; }
+}
+
+.xl-card-badge {
+  font-size: 10px !important;
+  font-weight: 700 !important;
+  padding: 2px 6px !important;
+  border-radius: 10px !important;
+}
+
+.xl-card-body {
+  font-size: 11px !important;
+  margin-bottom: 8px !important;
+}
+
+.xl-card-footer {
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+  padding-top: 6px !important;
+}
+
+.xl-card-advice {
+  font-size: 11px !important;
+  color: #0284c7 !important;
+  font-weight: 600 !important;
+}
+
+.xl-btn-card-action {
+  background: #0284c7 !important;
+  color: #fff !important;
+  border: none !important;
+  font-size: 11px !important;
+  padding: 4px 10px !important;
+  border-radius: 4px !important;
+  cursor: pointer !important;
+  font-weight: 600 !important;
+}
+
+/* 核心：竞价修改交互行 */
+.xl-card-bid-row {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 8px !important;
+  background: rgba(15, 23, 42, 0.05) !important;
+  border: 1px dashed rgba(100, 116, 139, 0.3) !important;
+  border-radius: 6px !important;
+  padding: 6px 10px !important;
+  margin-top: 6px !important;
+}
+.xl-theme-dark .xl-card-bid-row {
+  background: rgba(30, 41, 59, 0.6) !important;
+  border-color: rgba(71, 85, 105, 0.5) !important;
+}
+
+.xl-bid-compare {
+  display: flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  font-size: 11px !important;
+  flex-wrap: wrap !important;
+}
+
+.xl-bid-old {
+  color: #64748b !important;
+}
+.xl-bid-old b {
+  color: #334155 !important;
+}
+.xl-theme-dark .xl-bid-old b {
+  color: #cbd5e1 !important;
+}
+
+.xl-bid-arrow {
+  color: #94a3b8 !important;
+  font-size: 11px !important;
+}
+
+.xl-bid-label {
+  font-weight: 700 !important;
+  color: #0284c7 !important;
+}
+
+.xl-bid-input-wrap {
+  display: inline-flex !important;
+  align-items: center !important;
+  background: #fff !important;
+  border: 1.5px solid #0284c7 !important;
+  border-radius: 4px !important;
+  padding: 1px 4px !important;
+}
+.xl-theme-dark .xl-bid-input-wrap {
+  background: #0f172a !important;
+  border-color: #38bdf8 !important;
+}
+
+.xl-bid-cur {
+  font-weight: 700 !important;
+  font-size: 11px !important;
+  color: #0284c7 !important;
+  margin-right: 1px !important;
+}
+
+.xl-bid-input {
+  width: 58px !important;
+  border: none !important;
+  background: transparent !important;
+  font-weight: 800 !important;
+  font-size: 12px !important;
+  color: #0f172a !important;
+  outline: none !important;
+  padding: 2px 2px !important;
+}
+.xl-theme-dark .xl-bid-input {
+  color: #38bdf8 !important;
+}
+
+.xl-btn-apply-one {
+  background: #0284c7 !important;
+  color: #fff !important;
+  border: none !important;
+  padding: 4px 10px !important;
+  border-radius: 4px !important;
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  cursor: pointer !important;
+  white-space: nowrap !important;
+  transition: all 0.2s !important;
+}
+.xl-btn-apply-one:hover {
+  background: #0369a1 !important;
+}
+.xl-btn-apply-one.xl-applied {
+  background: #10b981 !important;
+}
+
+/* 批量操作控制条 */
+.xl-bulk-actions-bar {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 6px !important;
+  margin-bottom: 10px !important;
+}
+
+.xl-btn-bulk-bid {
+  background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%) !important;
+  color: #fff !important;
+  font-size: 12px !important;
+  font-weight: 700 !important;
+  padding: 8px 12px !important;
+  border-radius: 6px !important;
+  border: none !important;
+  cursor: pointer !important;
+  box-shadow: 0 2px 6px rgba(2, 132, 199, 0.25) !important;
+}
+.xl-btn-bulk-bid:hover {
+  background: linear-gradient(135deg, #0369a1 0%, #075985 100%) !important;
+}
+
+.xl-btn-bulk-boost {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
+  color: #fff !important;
+  font-size: 12px !important;
+  font-weight: 700 !important;
+  padding: 8px 12px !important;
+  border-radius: 6px !important;
+  border: none !important;
+  cursor: pointer !important;
+  box-shadow: 0 2px 6px rgba(16, 185, 129, 0.25) !important;
+}
+.xl-btn-bulk-boost:hover {
+  background: linear-gradient(135deg, #059669 0%, #047857 100%) !important;
+}
+
+/* 曝光激活设置卡片 */
+.xl-boost-settings-card {
+  background: rgba(2, 132, 199, 0.08) !important;
+  border: 1px solid rgba(2, 132, 199, 0.25) !important;
+  border-radius: 8px !important;
+  padding: 10px 12px !important;
+  margin-bottom: 10px !important;
+}
+.xl-theme-dark .xl-boost-settings-card {
+  background: rgba(14, 165, 233, 0.1) !important;
+  border-color: rgba(56, 189, 248, 0.3) !important;
+}
+
+.xl-boost-title {
+  font-size: 12px !important;
+  font-weight: 700 !important;
+  color: #0284c7 !important;
+  margin-bottom: 2px !important;
+}
+.xl-theme-dark .xl-boost-title {
+  color: #38bdf8 !important;
+}
+
+.xl-boost-desc {
+  font-size: 11px !important;
+  color: #64748b !important;
+  margin-bottom: 8px !important;
+  line-height: 1.4 !important;
+}
+.xl-theme-dark .xl-boost-desc {
+  color: #94a3b8 !important;
+}
+
+.xl-boost-params {
+  display: flex !important;
+  align-items: center !important;
+  gap: 12px !important;
+  flex-wrap: wrap !important;
+}
+
+.xl-boost-param-item {
+  display: flex !important;
+  align-items: center !important;
+  gap: 4px !important;
+  font-size: 11px !important;
+  font-weight: 600 !important;
+}
+
+.xl-boost-param-item input {
+  border: 1px solid #cbd5e1 !important;
+  border-radius: 4px !important;
+  padding: 3px 6px !important;
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  text-align: center !important;
+}
+.xl-theme-dark .xl-boost-param-item input {
+  background: #0f172a !important;
+  color: #f1f5f9 !important;
+  border-color: #475569 !important;
+}
+
+/* 下拉拓词界面 */
+.xl-input-row {
+  display: flex !important;
+  gap: 8px !important;
+  margin-bottom: 8px !important;
+}
+
+.xl-input {
+  flex: 1 !important;
+  width: auto !important;
+}
+
+.xl-progress-tip {
+  font-size: 11px !important;
+  color: #f59e0b !important;
+  margin-bottom: 8px !important;
+}
+
+.xl-kw-results-header {
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+  font-size: 11px !important;
+  margin-bottom: 6px !important;
+}
+
+.xl-btn-small {
+  border: none !important;
+  font-size: 11px !important;
+  padding: 3px 8px !important;
+  border-radius: 4px !important;
+  cursor: pointer !important;
+}
+
+.xl-kw-list {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 4px !important;
+  max-height: 260px !important;
+  overflow-y: auto !important;
+}
+
+.xl-kw-item {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  padding: 7px 10px !important;
+  border-radius: 6px !important;
+}
+
+.xl-kw-text {
+  font-size: 12px !important;
+  font-weight: 600 !important;
+}
+
+.xl-kw-tag {
+  font-size: 10px !important;
+  padding: 2px 6px !important;
+  border-radius: 4px !important;
+}
+
+.xl-btn-copy-one {
+  border: none !important;
+  font-size: 10px !important;
+  padding: 2px 8px !important;
+  border-radius: 4px !important;
+  cursor: pointer !important;
+}
+
+/* 弱势 ASIN 狙击界面 */
+.xl-asin-guide-card {
+  border-radius: 8px !important;
+  padding: 10px !important;
+  margin-bottom: 12px !important;
+}
+
+.xl-asin-guide-title {
+  font-size: 12px !important;
+  font-weight: 700 !important;
+  color: #d97706 !important;
+  margin-bottom: 4px !important;
+}
+
+.xl-asin-guide-desc {
+  font-size: 11px !important;
+  line-height: 1.4 !important;
+  margin-bottom: 8px !important;
+}
+
+.xl-asin-search-box {
+  display: flex !important;
+  gap: 8px !important;
+}
+
+.xl-asin-results-header {
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+  font-size: 11px !important;
+  margin-bottom: 6px !important;
+}
+
+.xl-asin-list {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 6px !important;
+  max-height: 260px !important;
+  overflow-y: auto !important;
+}
+
+.xl-asin-item {
+  border-radius: 6px !important;
+  padding: 8px 10px !important;
+}
+
+.xl-asin-header {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  font-size: 12px !important;
+  font-weight: 700 !important;
+  margin-bottom: 4px !important;
+}
+
+.xl-asin-left {
+  display: flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+}
+
+.xl-asin-code {
+  font-weight: 800 !important;
+  letter-spacing: 0.5px !important;
+}
+
+.xl-btn-asin-link {
+  display: inline-flex !important;
+  align-items: center !important;
+  text-decoration: none !important;
+  font-size: 10px !important;
+  font-weight: 700 !important;
+  padding: 1px 6px !important;
+  border-radius: 4px !important;
+}
+
+.xl-asin-right {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+}
+
+.xl-asin-rating { color: #dc2626 !important; }
+.xl-asin-price { color: #0284c7 !important; }
+
+.xl-asin-reason {
+  font-size: 11px !important;
+  margin-bottom: 2px !important;
+  font-weight: 600 !important;
+}
+
+.xl-asin-title {
+  font-size: 11px !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+/* 竞价测算界面 */
+.xl-bid-calc-box {
+  border-radius: 8px !important;
+  padding: 12px !important;
+}
+
+.xl-calc-row {
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+  margin-bottom: 10px !important;
+  font-size: 12px !important;
+}
+
+.xl-calc-input {
+  width: 100px !important;
+  text-align: right !important;
+}
+
+.xl-calc-card {
+  border-radius: 8px !important;
+  padding: 12px !important;
+  text-align: center !important;
+  margin-top: 10px !important;
+}
+
+.xl-calc-result-title {
+  font-size: 11px !important;
+}
+
+.xl-calc-big-num {
+  font-size: 24px !important;
+  font-weight: 800 !important;
+  color: #d97706 !important;
+  margin: 4px 0 !important;
+}
+
+.xl-calc-strategy {
+  font-size: 11px !important;
+  text-align: left !important;
+  padding-top: 8px !important;
+  margin-top: 6px !important;
+}
+
+/* 技术支持页面 */
+.xl-support-panel {
+  border-radius: 8px !important;
+  padding: 14px !important;
+  text-align: center !important;
+}
+
+.xl-support-tag {
+  display: inline-block !important;
+  font-size: 10px !important;
+  padding: 2px 8px !important;
+  border-radius: 12px !important;
+  margin-bottom: 4px !important;
+}
+
+.xl-support-name {
+  font-size: 18px !important;
+  font-weight: 800 !important;
+  margin-bottom: 8px !important;
+}
+
+.xl-support-phone-bar {
+  display: inline-flex !important;
+  align-items: center !important;
+  border-radius: 6px !important;
+  padding: 4px 10px !important;
+  font-size: 12px !important;
+  gap: 6px !important;
+  margin-bottom: 10px !important;
+}
+
+.xl-support-phone-val {
+  font-weight: 700 !important;
+}
+
+.xl-btn-copy-small {
+  border: none !important;
+  font-size: 10px !important;
+  padding: 2px 6px !important;
+  border-radius: 4px !important;
+  cursor: pointer !important;
+}
+
+.xl-support-intro {
+  font-size: 11px !important;
+  line-height: 1.4 !important;
+  margin-bottom: 12px !important;
+}
+
+.xl-support-qr-row {
+  display: grid !important;
+  grid-template-columns: 1fr 1fr !important;
+  gap: 12px !important;
+  margin-bottom: 12px !important;
+}
+
+.xl-qr-box {
+  border-radius: 8px !important;
+  padding: 8px !important;
+}
+
+.xl-qr-img-frame {
+  width: 100% !important;
+  aspect-ratio: 1 !important;
+  background: #fff !important;
+  border-radius: 6px !important;
+  padding: 4px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  margin-bottom: 4px !important;
+}
+
+.xl-qr-img {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: contain !important;
+}
+
+.xl-qr-text {
+  font-size: 11px !important;
+  font-weight: 600 !important;
+}
+
+.xl-copyright {
+  font-size: 10px !important;
+}
+
+/* ==========================================================
+   3. 主题色彩变量定义 (默认亮色 vs 暗黑模式)
+   ========================================================== */
+
+/* --- 亮色主题 (DEFAULT LIGHT THEME) --- */
+.xl-theme-light {
+  background: #ffffff !important;
+  color: #0f172a !important;
+  border: 1px solid #cbd5e1 !important;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.15) !important;
+}
+
+.xl-theme-light .xl-panel-header {
+  background: #f8fafc !important;
+  border-bottom: 1px solid #e2e8f0 !important;
+}
+.xl-theme-light .xl-brand-title { color: #0f172a !important; }
+.xl-theme-light .xl-brand-sub { color: #64748b !important; }
+
+.xl-theme-light .xl-btn-header-toggle.active {
+  background: #dcfce7 !important;
+  color: #15803d !important;
+  border: 1px solid #86efac !important;
+}
+.xl-theme-light .xl-btn-header-toggle.paused {
+  background: #fee2e2 !important;
+  color: #b91c1c !important;
+  border: 1px solid #fca5a5 !important;
+}
+
+.xl-theme-light .xl-btn-theme-switch {
+  background: #f1f5f9 !important;
+  color: #475569 !important;
+  border: 1px solid #cbd5e1 !important;
+}
+
+.xl-theme-light .xl-btn-icon {
+  background: #f1f5f9 !important;
+  color: #475569 !important;
+}
+.xl-theme-light .xl-btn-icon:hover {
+  background: #e2e8f0 !important;
+  color: #0f172a !important;
+}
+
+.xl-theme-light .xl-tabs {
+  background: #f1f5f9 !important;
+  border-bottom: 1px solid #e2e8f0 !important;
+}
+.xl-theme-light .xl-tab-item {
+  color: #64748b !important;
+}
+.xl-theme-light .xl-tab-item.active {
+  color: #d97706 !important;
+  border-bottom-color: #d97706 !important;
+  background: #ffffff !important;
+}
+
+.xl-theme-light .xl-metric-toggle-bar {
+  background: #f8fafc !important;
+  border: 1px solid #e2e8f0 !important;
+}
+.xl-theme-light .xl-metric-toggle-title { color: #334155 !important; }
+.xl-theme-light .xl-toggle-group {
+  background: #e2e8f0 !important;
+}
+.xl-theme-light .xl-toggle-btn { color: #475569 !important; }
+
+.xl-theme-light .xl-summary-item {
+  background: #f8fafc !important;
+  border: 1px solid #e2e8f0 !important;
+}
+.xl-theme-light .xl-sum-label { color: #64748b !important; }
+
+.xl-theme-light .xl-btn-secondary {
+  background: #f1f5f9 !important;
+  color: #334155 !important;
+  border: 1px solid #cbd5e1 !important;
+}
+
+.xl-theme-light .xl-empty-state {
+  background: #f8fafc !important;
+  color: #64748b !important;
+  border: 1px dashed #cbd5e1 !important;
+}
+
+.xl-theme-light .xl-diag-card {
+  background: #f8fafc !important;
+  border: 1px solid #e2e8f0 !important;
+}
+.xl-theme-light .xl-card-kw { color: #0f172a !important; }
+.xl-theme-light .xl-card-badge {
+  background: #e2e8f0 !important;
+  color: #334155 !important;
+}
+.xl-theme-light .xl-card-body { color: #475569 !important; }
+.xl-theme-light .xl-card-footer { border-top: 1px solid #e2e8f0 !important; }
+
+.xl-theme-light input[type="text"],
+.xl-theme-light input[type="number"],
+.xl-theme-light input[type="password"],
+.xl-theme-light textarea {
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+  border: 1px solid #cbd5e1 !important;
+}
+
+.xl-theme-light .xl-kw-results-header { color: #475569 !important; }
+.xl-theme-light .xl-btn-small {
+  background: #f1f5f9 !important;
+  color: #334155 !important;
+  border: 1px solid #cbd5e1 !important;
+}
+.xl-theme-light .xl-kw-item {
+  background-color: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+}
+.xl-theme-light .xl-kw-text { color: #0f172a !important; }
+.xl-theme-light .xl-kw-tag {
+  background: #e0f2fe !important;
+  color: #0284c7 !important;
+}
+.xl-theme-light .xl-btn-copy-one {
+  background: #f1f5f9 !important;
+  color: #334155 !important;
+  border: 1px solid #cbd5e1 !important;
+}
+
+.xl-theme-light .xl-asin-guide-card {
+  background: #fffbeb !important;
+  border: 1px solid #fef3c7 !important;
+}
+.xl-theme-light .xl-asin-guide-desc { color: #475569 !important; }
+.xl-theme-light .xl-asin-results-header { color: #475569 !important; }
+
+.xl-theme-light .xl-asin-item {
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.04) !important;
+}
+.xl-theme-light .xl-asin-code { color: #0284c7 !important; }
+.xl-theme-light .xl-btn-asin-link {
+  background: #e0f2fe !important;
+  color: #0369a1 !important;
+  border: 1px solid #bae6fd !important;
+}
+.xl-theme-light .xl-asin-reason { color: #334155 !important; }
+.xl-theme-light .xl-asin-title { color: #64748b !important; }
+
+.xl-theme-light .xl-bid-calc-box {
+  background: #f8fafc !important;
+  border: 1px solid #e2e8f0 !important;
+}
+.xl-theme-light .xl-calc-row { color: #334155 !important; }
+.xl-theme-light .xl-calc-card {
+  background: #ffffff !important;
+  border: 1px solid #f59e0b !important;
+}
+.xl-theme-light .xl-calc-result-title { color: #64748b !important; }
+.xl-theme-light .xl-calc-strategy {
+  color: #334155 !important;
+  border-top: 1px solid #e2e8f0 !important;
+}
+
+.xl-theme-light .xl-support-panel {
+  background: #f8fafc !important;
+  border: 1px solid #e2e8f0 !important;
+}
+.xl-theme-light .xl-support-tag {
+  background: #e0f2fe !important;
+  color: #0284c7 !important;
+}
+.xl-theme-light .xl-support-name { color: #0f172a !important; }
+.xl-theme-light .xl-support-phone-bar {
+  background: #ffffff !important;
+  border: 1px solid #cbd5e1 !important;
+}
+.xl-theme-light .xl-support-phone-val { color: #d97706 !important; }
+.xl-theme-light .xl-btn-copy-small {
+  background: #f1f5f9 !important;
+  color: #334155 !important;
+  border: 1px solid #cbd5e1 !important;
+}
+.xl-theme-light .xl-support-intro { color: #64748b !important; }
+.xl-theme-light .xl-qr-box {
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+}
+.xl-theme-light .xl-qr-text { color: #334155 !important; }
+.xl-theme-light .xl-copyright { color: #94a3b8 !important; }
+
+/* --- 暗黑主题 (OPTIONAL DARK THEME) --- */
+.xl-theme-dark {
+  background: #0f172a !important;
+  color: #f1f5f9 !important;
+  border: 1px solid #334155 !important;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.7) !important;
+}
+
+.xl-theme-dark .xl-panel-header {
+  background: #1e293b !important;
+  border-bottom: 1px solid #334155 !important;
+}
+.xl-theme-dark .xl-brand-title { color: #fbbf24 !important; }
+.xl-theme-dark .xl-brand-sub { color: #94a3b8 !important; }
+
+.xl-theme-dark .xl-btn-header-toggle.active {
+  background: rgba(16, 185, 129, 0.2) !important;
+  color: #34d399 !important;
+  border: 1px solid rgba(16, 185, 129, 0.4) !important;
+}
+.xl-theme-dark .xl-btn-header-toggle.paused {
+  background: rgba(239, 68, 68, 0.2) !important;
+  color: #f87171 !important;
+  border: 1px solid rgba(239, 68, 68, 0.4) !important;
+}
+
+.xl-theme-dark .xl-btn-theme-switch {
+  background: #334155 !important;
+  color: #fbbf24 !important;
+}
+
+.xl-theme-dark .xl-btn-icon {
+  background: #334155 !important;
+  color: #cbd5e1 !important;
+}
+.xl-theme-dark .xl-btn-icon:hover {
+  background: #475569 !important;
+  color: #fff !important;
+}
+
+.xl-theme-dark .xl-tabs {
+  background: #111827 !important;
+  border-bottom: 1px solid #1f2937 !important;
+}
+.xl-theme-dark .xl-tab-item {
+  color: #94a3b8 !important;
+}
+.xl-theme-dark .xl-tab-item.active {
+  color: #fbbf24 !important;
+  border-bottom-color: #fbbf24 !important;
+  background: rgba(245, 158, 11, 0.08) !important;
+}
+
+.xl-theme-dark .xl-metric-toggle-bar {
+  background: #1e293b !important;
+  border: 1px solid #334155 !important;
+}
+.xl-theme-dark .xl-metric-toggle-title { color: #cbd5e1 !important; }
+.xl-theme-dark .xl-toggle-group {
+  background: #0f172a !important;
+}
+.xl-theme-dark .xl-toggle-btn { color: #94a3b8 !important; }
+
+.xl-theme-dark .xl-summary-item {
+  background: #1e293b !important;
+  border: 1px solid #334155 !important;
+}
+.xl-theme-dark .xl-sum-label { color: #94a3b8 !important; }
+
+.xl-theme-dark .xl-btn-secondary {
+  background: #334155 !important;
+  color: #e2e8f0 !important;
+}
+
+.xl-theme-dark .xl-empty-state {
+  background: #1e293b !important;
+  color: #94a3b8 !important;
+}
+
+.xl-theme-dark .xl-diag-card {
+  background: #1e293b !important;
+  border: 1px solid #334155 !important;
+}
+.xl-theme-dark .xl-card-kw { color: #f8fafc !important; }
+.xl-theme-dark .xl-btn-locate {
+  background: #334155 !important;
+  border-color: #475569 !important;
+  color: #38bdf8 !important;
+}
+.xl-theme-dark .xl-btn-locate:hover {
+  background: #0284c7 !important;
+  color: #ffffff !important;
+  border-color: #0284c7 !important;
+}
+.xl-theme-dark .xl-card-badge {
+  background: #334155 !important;
+  color: #cbd5e1 !important;
+}
+.xl-theme-dark .xl-card-body { color: #cbd5e1 !important; }
+.xl-theme-dark .xl-card-footer { border-top: 1px solid #334155 !important; }
+
+.xl-theme-dark input[type="text"],
+.xl-theme-dark input[type="number"],
+.xl-theme-dark input[type="password"],
+.xl-theme-dark textarea {
+  background-color: #1e293b !important;
+  color: #f8fafc !important;
+  border: 1px solid #475569 !important;
+}
+
+.xl-theme-dark .xl-kw-results-header { color: #cbd5e1 !important; }
+.xl-theme-dark .xl-btn-small {
+  background: #334155 !important;
+  color: #cbd5e1 !important;
+}
+.xl-theme-dark .xl-kw-item {
+  background-color: #1e293b !important;
+  border: 1px solid #334155 !important;
+}
+.xl-theme-dark .xl-kw-text { color: #f8fafc !important; }
+.xl-theme-dark .xl-kw-tag {
+  background: #0f172a !important;
+  color: #38bdf8 !important;
+}
+.xl-theme-dark .xl-btn-copy-one {
+  background: #334155 !important;
+  color: #e2e8f0 !important;
+}
+
+.xl-theme-dark .xl-asin-guide-card {
+  background: rgba(245, 158, 11, 0.1) !important;
+  border: 1px solid rgba(245, 158, 11, 0.3) !important;
+}
+.xl-theme-dark .xl-asin-guide-desc { color: #cbd5e1 !important; }
+.xl-theme-dark .xl-asin-results-header { color: #cbd5e1 !important; }
+
+.xl-theme-dark .xl-asin-item {
+  background: #1e293b !important;
+  border: 1px solid #334155 !important;
+}
+.xl-theme-dark .xl-asin-code { color: #fbbf24 !important; }
+.xl-theme-dark .xl-btn-asin-link {
+  background: #0f172a !important;
+  color: #38bdf8 !important;
+  border: 1px solid #1e3a8a !important;
+}
+.xl-theme-dark .xl-asin-reason { color: #cbd5e1 !important; }
+.xl-theme-dark .xl-asin-title { color: #94a3b8 !important; }
+
+.xl-theme-dark .xl-bid-calc-box {
+  background: #1e293b !important;
+  border: 1px solid #334155 !important;
+}
+.xl-theme-dark .xl-calc-row { color: #cbd5e1 !important; }
+.xl-theme-dark .xl-calc-card {
+  background: #0f172a !important;
+  border: 1px solid #f59e0b !important;
+}
+.xl-theme-dark .xl-calc-result-title { color: #94a3b8 !important; }
+.xl-theme-dark .xl-calc-strategy {
+  color: #cbd5e1 !important;
+  border-top: 1px solid #334155 !important;
+}
+
+.xl-theme-dark .xl-support-panel {
+  background: #1e293b !important;
+  border: 1px solid #334155 !important;
+}
+.xl-theme-dark .xl-support-tag {
+  background: rgba(56, 189, 248, 0.15) !important;
+  color: #38bdf8 !important;
+}
+.xl-theme-dark .xl-support-name { color: #f8fafc !important; }
+.xl-theme-dark .xl-support-phone-bar {
+  background: #0f172a !important;
+  border: 1px solid #475569 !important;
+}
+.xl-theme-dark .xl-support-phone-val { color: #fbbf24 !important; }
+.xl-theme-dark .xl-btn-copy-small {
+  background: #334155 !important;
+  color: #fff !important;
+}
+.xl-theme-dark .xl-support-intro { color: #94a3b8 !important; }
+.xl-theme-dark .xl-qr-box {
+  background: #0f172a !important;
+  border: 1px solid #334155 !important;
+}
+.xl-theme-dark .xl-qr-text { color: #cbd5e1 !important; }
+.xl-theme-dark .xl-copyright { color: #64748b !important; }
+
+/* ==========================================================
+   4. 行内诊断徽章（在亚马逊后台关键词/广告活动表格中随看随显）
+   ========================================================== */
+.xl-inline-badge {
+  position: relative !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  margin-left: 4px !important;
+  margin-top: 2px !important;
+  padding: 1px 6px !important;
+  border-radius: 4px !important;
+  font-size: 10.5px !important;
+  font-weight: 700 !important;
+  cursor: pointer !important;
+  user-select: none !important;
+  vertical-align: middle !important;
+  line-height: 15px !important;
+  height: 18px !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1) !important;
+  transition: transform 0.15s !important;
+  z-index: 100 !important;
+  white-space: nowrap !important;
+}
+
+.xl-inline-badge:hover {
+  transform: translateY(-1px) scale(1.02) !important;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.15) !important;
+}
+
+.xl-badge-danger {
+  background-color: #fee2e2 !important;
+  color: #b91c1c !important;
+  border: 1px solid #ef4444 !important;
+}
+
+.xl-badge-warning {
+  background-color: #fef3c7 !important;
+  color: #b45309 !important;
+  border: 1px solid #f59e0b !important;
+}
+
+.xl-badge-success {
+  background-color: #dcfce7 !important;
+  color: #15803d !important;
+  border: 1px solid #10b981 !important;
+}
+
+.xl-badge-info {
+  background-color: #e0f2fe !important;
+  color: #0369a1 !important;
+  border: 1px solid #0284c7 !important;
+}
+
+/* 行内 Tooltip 悬浮卡 */
+.xl-inline-tooltip {
+  display: none !important;
+  position: absolute !important;
+  bottom: calc(100% + 6px) !important;
+  left: 50% !important;
+  transform: translateX(-50%) !important;
+  width: 260px !important;
+  background: #0f172a !important;
+  border: 1px solid #475569 !important;
+  border-radius: 8px !important;
+  padding: 10px 12px !important;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.6) !important;
+  color: #f1f5f9 !important;
+  z-index: 2147483647 !important;
+  text-align: left !important;
+  white-space: normal !important;
+  cursor: default !important;
+}
+
+/* 核心修复：透明悬浮桥梁 (解决鼠标往上移动到按钮时中间有缝隙导致消失的 Bug) */
+.xl-inline-tooltip::after {
+  content: '' !important;
+  position: absolute !important;
+  bottom: -16px !important;
+  left: 0 !important;
+  width: 100% !important;
+  height: 20px !important;
+  background: transparent !important;
+  pointer-events: auto !important;
+}
+
+.xl-inline-badge:hover .xl-inline-tooltip,
+.xl-inline-badge.xl-pinned .xl-inline-tooltip {
+  display: block !important;
+}
+
+.xl-tip-title {
+  font-size: 12px !important;
+  font-weight: 800 !important;
+  color: #fbbf24 !important;
+  margin-bottom: 4px !important;
+}
+
+.xl-tip-desc {
+  font-size: 11px !important;
+  color: #cbd5e1 !important;
+  margin-bottom: 6px !important;
+  line-height: 1.4 !important;
+}
+
+.xl-tip-action {
+  font-size: 11px !important;
+  color: #38bdf8 !important;
+  margin-bottom: 8px !important;
+}
+
+.xl-tip-btn {
+  width: 100% !important;
+  background: #2563eb !important;
+  color: #fff !important;
+  border: none !important;
+  border-radius: 4px !important;
+  padding: 6px !important;
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  cursor: pointer !important;
+}
+
+.xl-tip-btn:hover {
+  background: #1d4ed8 !important;
+}
+
+/* 5. 前台弱势竞品标贴 (ASIN Sniper Badge) */
+.xl-weak-asin-badge {
+  display: inline-flex !important;
+  align-items: center !important;
+  background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%) !important;
+  border: 1px dashed #ef4444 !important;
+  color: #b91c1c !important;
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  padding: 3px 8px !important;
+  border-radius: 4px !important;
+  margin: 4px 0 !important;
+  box-shadow: 0 2px 4px rgba(239, 68, 68, 0.1) !important;
+  gap: 6px !important;
+}
+
+.xl-badge-link {
+  color: #0284c7 !important;
+  text-decoration: underline !important;
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  cursor: pointer !important;
+}
+.xl-badge-link:hover {
+  color: #0369a1 !important;
+}
+
+/* 6. 轻量浮动 Toast 气泡 (1.5秒自动淡出，不阻断操作) */
+.xl-toast-container {
+  position: fixed !important;
+  top: 25px !important;
+  right: 25px !important;
+  z-index: 2147483647 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 8px !important;
+  pointer-events: none !important;
+}
+
+.xl-toast {
+  pointer-events: auto !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 12px !important;
+  background: #0f172a !important;
+  color: #f8fafc !important;
+  border-radius: 8px !important;
+  padding: 10px 14px !important;
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4) !important;
+  border-left: 4px solid #10b981 !important;
+  border: 1px solid #334155 !important;
+  opacity: 0 !important;
+  transform: translateY(-10px) !important;
+  transition: opacity 0.25s ease, transform 0.25s ease !important;
+  max-width: 380px !important;
+}
+
+.xl-toast.xl-toast-show {
+  opacity: 1 !important;
+  transform: translateY(0) !important;
+}
+
+.xl-toast-success {
+  border-left: 4px solid #10b981 !important;
+}
+
+.xl-toast-info {
+  border-left: 4px solid #38bdf8 !important;
+}
+
+.xl-toast-close {
+  background: transparent !important;
+  border: none !important;
+  color: #94a3b8 !important;
+  cursor: pointer !important;
+  font-size: 12px !important;
+  padding: 0 4px !important;
+}
+.xl-toast-close:hover {
+  color: #fff !important;
+}
+
+.xl-toast-silent-btn {
+  font-size: 11px !important;
+  color: #38bdf8 !important;
+  text-decoration: underline !important;
+  cursor: pointer !important;
+  white-space: nowrap !important;
+  margin-left: 8px !important;
+  font-weight: normal !important;
+}
+.xl-toast-silent-btn:hover {
+  color: #7dd3fc !important;
+}
+
+/* 批量快速调价幅度条与芯片按钮 */
+.xl-quick-adjust-bar {
+  display: flex !important;
+  align-items: center !important;
+  flex-wrap: wrap !important;
+  gap: 6px !important;
+  padding: 6px 10px !important;
+  border-radius: 6px !important;
+  margin-bottom: 8px !important;
+  font-size: 11px !important;
+  transition: all 0.2s ease !important;
+}
+
+.xl-adjust-label {
+  font-weight: 700 !important;
+  font-size: 11px !important;
+  white-space: nowrap !important;
+}
+
+.xl-toggle-sm {
+  padding: 1px !important;
+}
+
+.xl-toggle-sm .xl-toggle-btn {
+  padding: 1px 6px !important;
+  font-size: 10px !important;
+}
+
+.xl-adjust-input-wrap {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 3px !important;
+  font-size: 11px !important;
+  font-weight: 600 !important;
+}
+
+.xl-adjust-input-wrap input {
+  width: 68px !important;
+  height: 24px !important;
+  padding: 2px 4px !important;
+  box-sizing: border-box !important;
+  border-radius: 4px !important;
+  border: 1px solid #cbd5e1 !important;
+  font-size: 12px !important;
+  text-align: center !important;
+  font-weight: bold !important;
+  background: #ffffff !important;
+  color: #0f172a !important;
+}
+
+/* 彻底隐藏数字输入框在Chrome/Edge下的微型上下箭头，保证0.02完整清晰居中显示 */
+.xl-adjust-input-wrap input::-webkit-outer-spin-button,
+.xl-adjust-input-wrap input::-webkit-inner-spin-button,
+.xl-boost-param-item input::-webkit-outer-spin-button,
+.xl-boost-param-item input::-webkit-inner-spin-button {
+  -webkit-appearance: none !important;
+  margin: 0 !important;
+}
+.xl-adjust-input-wrap input[type=number],
+.xl-boost-param-item input[type=number] {
+  -moz-appearance: textfield !important;
+}
+
+.xl-theme-light .xl-quick-adjust-bar {
+  background: #f8fafc !important;
+  border: 1px solid #e2e8f0 !important;
+  color: #334155 !important;
+}
+
+.xl-theme-dark .xl-quick-adjust-bar {
+  background: #1e293b !important;
+  border: 1px solid #334155 !important;
+  color: #cbd5e1 !important;
+}
+
+.xl-theme-dark .xl-adjust-input-wrap input {
+  background: #0f172a !important;
+  border-color: #475569 !important;
+  color: #f8fafc !important;
+}
