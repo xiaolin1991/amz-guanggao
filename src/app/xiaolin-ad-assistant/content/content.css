@@ -74,10 +74,10 @@
   border-radius: 10px !important;
   border: 2px solid #fff !important;
   display: none;
-  animation: pulse 2s infinite !important;
+  animation: xlPulseBadge 2s infinite !important;
 }
 
-@keyframes pulse {
+@keyframes xlPulseBadge {
   0% { transform: scale(1); }
   50% { transform: scale(1.15); }
   100% { transform: scale(1); }
@@ -105,15 +105,16 @@
 }
 
 /* ==========================================================
-   2. 悬浮主面板容器 (靠右侧居中显示，避免遮挡顶部菜单与财务卡片)
+   2. 悬浮主面板容器 (靠右侧居中显示，顶部导航按钮单行严密对齐)
    ========================================================== */
 .xl-panel-container {
   position: fixed !important;
   top: 50% !important;
-  right: 20px !important;
-  transform: translateY(-50%) !important; /* 关键：垂直居中 */
-  width: 450px !important;
-  max-height: 82vh !important;
+  right: 18px !important;
+  transform: translateY(-50%) !important;
+  width: 482px !important;
+  max-width: calc(100vw - 24px) !important;
+  max-height: 84vh !important;
   z-index: 2147483646 !important;
   border-radius: 12px !important;
   display: flex !important;
@@ -127,79 +128,137 @@
   display: none !important;
 }
 
+/* 修复 1.2：面板头部导航条严格单行水平对齐，按钮绝不竖向折行 */
 .xl-panel-header {
   display: flex !important;
   align-items: center !important;
   justify-content: space-between !important;
-  padding: 10px 14px !important;
+  gap: 8px !important;
+  padding: 9px 12px !important;
   cursor: move !important;
   user-select: none !important;
+  flex-wrap: nowrap !important;
 }
 
 .xl-brand {
   display: flex !important;
   align-items: center !important;
-  gap: 10px !important;
+  gap: 8px !important;
+  min-width: 0 !important;
+  flex: 1 1 auto !important;
+  overflow: hidden !important;
 }
 
 .xl-brand-icon {
-  width: 30px !important;
-  height: 30px !important;
+  width: 28px !important;
+  height: 28px !important;
   object-fit: contain !important;
+  flex-shrink: 0 !important;
 }
 
 .xl-brand-title {
-  font-size: 15px !important;
+  font-size: 14px !important;
   font-weight: 800 !important;
+  white-space: nowrap !important;
+  line-height: 1.2 !important;
 }
 
 .xl-brand-sub {
-  font-size: 10px !important;
+  font-size: 9.5px !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  line-height: 1.2 !important;
 }
 
 .xl-header-actions {
   display: flex !important;
   align-items: center !important;
-  gap: 6px !important;
+  gap: 5px !important;
+  flex-wrap: nowrap !important;
+  flex-shrink: 0 !important;
+}
+
+/* 顶部极速全表快扫按钮 */
+.xl-btn-header-scan {
+  background: #0284c7 !important;
+  color: #ffffff !important;
+  border: 1px solid #0284c7 !important;
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  height: 26px !important;
+  padding: 0 8px !important;
+  border-radius: 6px !important;
+  cursor: pointer !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 3px !important;
+  white-space: nowrap !important;
+  flex-shrink: 0 !important;
+  line-height: 1 !important;
+  transition: all 0.15s ease !important;
+}
+
+.xl-btn-header-scan:hover {
+  background: #0369a1 !important;
+  box-shadow: 0 2px 6px rgba(2, 132, 199, 0.35) !important;
 }
 
 .xl-btn-header-toggle {
   border: none !important;
   font-size: 11px !important;
   font-weight: 700 !important;
-  padding: 3px 8px !important;
-  border-radius: 12px !important;
+  height: 26px !important;
+  padding: 0 8px !important;
+  border-radius: 6px !important;
   cursor: pointer !important;
-  display: flex !important;
+  display: inline-flex !important;
   align-items: center !important;
-  gap: 4px !important;
+  justify-content: center !important;
+  gap: 3px !important;
+  white-space: nowrap !important;
+  flex-shrink: 0 !important;
+  line-height: 1 !important;
 }
 
 .xl-btn-theme-switch {
   border: 1px solid transparent !important;
   font-size: 11px !important;
   font-weight: 600 !important;
-  padding: 3px 8px !important;
+  height: 26px !important;
+  padding: 0 8px !important;
   border-radius: 6px !important;
   cursor: pointer !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 3px !important;
+  white-space: nowrap !important;
+  flex-shrink: 0 !important;
+  line-height: 1 !important;
 }
 
 .xl-btn-icon {
   border: none !important;
-  width: 26px !important;
+  width: 24px !important;
   height: 26px !important;
   border-radius: 6px !important;
   cursor: pointer !important;
-  display: flex !important;
+  display: inline-flex !important;
   align-items: center !important;
   justify-content: center !important;
   font-size: 12px !important;
+  white-space: nowrap !important;
+  flex-shrink: 0 !important;
+  line-height: 1 !important;
 }
 
 /* 导航标签 */
 .xl-tabs {
   display: flex !important;
   overflow-x: auto !important;
+  flex-wrap: nowrap !important;
 }
 
 .xl-tab-item {
@@ -217,9 +276,9 @@
 
 /* 面板主体 */
 .xl-panel-body {
-  padding: 14px !important;
+  padding: 12px 14px !important;
   overflow-y: auto !important;
-  max-height: calc(82vh - 110px) !important;
+  max-height: calc(84vh - 105px) !important;
 }
 
 .xl-panel-body::-webkit-scrollbar {
@@ -352,29 +411,47 @@
 .xl-diag-card-danger { border-left: 4px solid #ef4444 !important; }
 .xl-diag-card-warning { border-left: 4px solid #f59e0b !important; }
 .xl-diag-card-success { border-left: 4px solid #10b981 !important; }
+.xl-diag-card-info { border-left: 4px solid #0284c7 !important; }
 
 .xl-card-header {
   display: flex !important;
   justify-content: space-between !important;
   align-items: center !important;
   margin-bottom: 4px !important;
+  gap: 6px !important;
 }
 
 .xl-card-kw-wrap {
   display: flex !important;
   align-items: center !important;
-  gap: 6px !important;
-  max-width: 72% !important;
+  gap: 5px !important;
+  max-width: 74% !important;
   min-width: 0 !important;
 }
 
 .xl-card-kw {
   font-weight: 700 !important;
-  font-size: 13px !important;
+  font-size: 12.5px !important;
   overflow: hidden !important;
   text-overflow: ellipsis !important;
   white-space: nowrap !important;
   color: #1e293b !important;
+}
+
+.xl-card-match-tag {
+  font-size: 10px !important;
+  font-weight: 600 !important;
+  padding: 1px 5px !important;
+  border-radius: 4px !important;
+  background: #e2e8f0 !important;
+  color: #475569 !important;
+  white-space: nowrap !important;
+  flex-shrink: 0 !important;
+}
+
+.xl-theme-dark .xl-card-match-tag {
+  background: #334155 !important;
+  color: #cbd5e1 !important;
 }
 
 .xl-btn-locate {
@@ -391,6 +468,7 @@
   gap: 2px !important;
   transition: all 0.15s ease !important;
   white-space: nowrap !important;
+  flex-shrink: 0 !important;
   line-height: 16px !important;
 }
 
@@ -402,85 +480,47 @@
   transform: translateY(-1px) !important;
 }
 
-/* 顶部极速全表快扫按钮 */
-.xl-btn-header-scan {
-  background: #0284c7 !important;
-  color: #ffffff !important;
-  border: 1px solid #0284c7 !important;
-  font-size: 11px !important;
-  font-weight: 700 !important;
-  padding: 3px 8px !important;
-  border-radius: 4px !important;
-  cursor: pointer !important;
-  display: inline-flex !important;
-  align-items: center !important;
-  gap: 3px !important;
-  transition: all 0.15s ease !important;
-}
-
-.xl-btn-header-scan:hover {
-  background: #0369a1 !important;
-  box-shadow: 0 2px 6px rgba(2, 132, 199, 0.35) !important;
-}
-
-/* 亚马逊表格行高亮脉冲 (施加在每个 td/th 上，彻底解决 tr 无法渲染 outline 与 background 的缺陷) */
+/* ==========================================================
+   修复 1.4：关键词定位醒目红金高亮框 (注意：@keyframes 内严禁使用 !important，否则 Chrome 会忽略动画)
+   ========================================================== */
 @keyframes xlCellRowPulse {
   0% {
-    background-color: #fef08a !important;
+    background-color: #fef08a;
   }
-  30% {
-    background-color: #fde047 !important;
-  }
-  70% {
-    background-color: #fef9c3 !important;
+  50% {
+    background-color: #fde047;
   }
   100% {
-    background-color: transparent !important;
+    background-color: #fef9c3;
   }
 }
 
 .xl-row-highlight-pulse {
-  animation: xlCellRowPulse 5.5s ease-in-out !important;
+  background-color: #fef9c3 !important;
+  box-shadow: inset 0 2px 0 #f59e0b, inset 0 -2px 0 #f59e0b !important;
+  animation: xlCellRowPulse 1s ease-in-out infinite alternate !important;
 }
 
-/* 核心：关键词单元格专属超级醒目“准星对焦框” (Focus Box) */
 @keyframes xlKwCellFocusGlow {
   0% {
-    outline: 3.5px solid #f59e0b !important;
-    outline-offset: -3px !important;
-    box-shadow: 0 0 0 5px rgba(245, 158, 11, 0.45), inset 0 0 16px rgba(245, 158, 11, 0.3) !important;
-    background-color: #fef3c7 !important;
-  }
-  25% {
-    outline: 4px solid #d97706 !important;
-    outline-offset: -3px !important;
-    box-shadow: 0 0 0 7px rgba(217, 119, 6, 0.6), inset 0 0 22px rgba(217, 119, 6, 0.45) !important;
-    background-color: #fde68a !important;
-  }
-  50% {
-    outline: 3.5px solid #f59e0b !important;
-    outline-offset: -3px !important;
-    box-shadow: 0 0 0 5px rgba(245, 158, 11, 0.45), inset 0 0 16px rgba(245, 158, 11, 0.3) !important;
-    background-color: #fef3c7 !important;
-  }
-  75% {
-    outline: 4px solid #d97706 !important;
-    outline-offset: -3px !important;
-    box-shadow: 0 0 0 7px rgba(217, 119, 6, 0.6), inset 0 0 22px rgba(217, 119, 6, 0.45) !important;
-    background-color: #fde68a !important;
+    box-shadow: inset 0 0 0 2.5px #dc2626, 0 0 10px rgba(220, 38, 38, 0.45);
+    background-color: #fff1f2;
   }
   100% {
-    outline: 2.5px solid #f59e0b !important;
-    outline-offset: -2.5px !important;
-    box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.3) !important;
-    background-color: #fef3c7 !important;
+    box-shadow: inset 0 0 0 3.5px #ea580c, 0 0 20px rgba(234, 88, 12, 0.75);
+    background-color: #ffe4e6;
   }
 }
 
 .xl-kw-cell-focused {
-  animation: xlKwCellFocusGlow 5.5s cubic-bezier(0.25, 1, 0.5, 1) forwards !important;
   position: relative !important;
-  z-index: 100 !important;
+  z-index: 80 !important;
+  background-color: #fff1f2 !important;
+  outline: 3px solid #dc2626 !important;
+  outline-offset: -2px !important;
+  box-shadow: inset 0 0 0 2.5px #dc2626, 0 0 16px rgba(220, 38, 38, 0.65) !important;
+  border-radius: 4px !important;
+  animation: xlKwCellFocusGlow 0.8s ease-in-out infinite alternate !important;
 }
 
 /* 单元格内部注入的醒目标记小胶囊 */
@@ -488,21 +528,22 @@
   display: inline-flex !important;
   align-items: center !important;
   gap: 2px !important;
-  background: #d97706 !important;
+  background: #dc2626 !important;
   color: #ffffff !important;
   font-size: 10px !important;
   font-weight: 800 !important;
   padding: 1px 6px !important;
   border-radius: 4px !important;
   margin-left: 6px !important;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25) !important;
-  animation: xlFlagPulse 1.2s infinite alternate ease-in-out !important;
+  box-shadow: 0 2px 6px rgba(220, 38, 38, 0.4) !important;
+  animation: xlFlagPulse 0.8s infinite alternate ease-in-out !important;
   vertical-align: middle !important;
+  white-space: nowrap !important;
 }
 
 @keyframes xlFlagPulse {
-  0% { transform: scale(0.95); opacity: 0.9; }
-  100% { transform: scale(1.08); opacity: 1; }
+  0% { transform: scale(0.96); }
+  100% { transform: scale(1.06); }
 }
 
 .xl-card-badge {
@@ -510,11 +551,13 @@
   font-weight: 700 !important;
   padding: 2px 6px !important;
   border-radius: 10px !important;
+  white-space: nowrap !important;
+  flex-shrink: 0 !important;
 }
 
 .xl-card-body {
   font-size: 11px !important;
-  margin-bottom: 8px !important;
+  margin-bottom: 6px !important;
 }
 
 .xl-card-footer {
@@ -546,11 +589,11 @@
   display: flex !important;
   align-items: center !important;
   justify-content: space-between !important;
-  gap: 8px !important;
+  gap: 6px !important;
   background: rgba(15, 23, 42, 0.05) !important;
   border: 1px dashed rgba(100, 116, 139, 0.3) !important;
   border-radius: 6px !important;
-  padding: 6px 10px !important;
+  padding: 6px 8px !important;
   margin-top: 6px !important;
 }
 .xl-theme-dark .xl-card-bid-row {
@@ -561,13 +604,14 @@
 .xl-bid-compare {
   display: flex !important;
   align-items: center !important;
-  gap: 6px !important;
+  gap: 5px !important;
   font-size: 11px !important;
   flex-wrap: wrap !important;
 }
 
 .xl-bid-old {
   color: #64748b !important;
+  white-space: nowrap !important;
 }
 .xl-bid-old b {
   color: #334155 !important;
@@ -584,6 +628,7 @@
 .xl-bid-label {
   font-weight: 700 !important;
   color: #0284c7 !important;
+  white-space: nowrap !important;
 }
 
 .xl-bid-input-wrap {
@@ -607,7 +652,7 @@
 }
 
 .xl-bid-input {
-  width: 58px !important;
+  width: 56px !important;
   border: none !important;
   background: transparent !important;
   font-weight: 800 !important;
@@ -620,11 +665,18 @@
   color: #38bdf8 !important;
 }
 
+.xl-card-btn-group {
+  display: flex !important;
+  align-items: center !important;
+  gap: 4px !important;
+  flex-shrink: 0 !important;
+}
+
 .xl-btn-apply-one {
   background: #0284c7 !important;
   color: #fff !important;
   border: none !important;
-  padding: 4px 10px !important;
+  padding: 4px 9px !important;
   border-radius: 4px !important;
   font-size: 11px !important;
   font-weight: 700 !important;
@@ -637,6 +689,22 @@
 }
 .xl-btn-apply-one.xl-applied {
   background: #10b981 !important;
+}
+
+.xl-btn-negate-inline {
+  background: #fee2e2 !important;
+  color: #b91c1c !important;
+  border: 1px solid #fca5a5 !important;
+  padding: 3px 7px !important;
+  border-radius: 4px !important;
+  font-size: 10.5px !important;
+  font-weight: 700 !important;
+  cursor: pointer !important;
+  white-space: nowrap !important;
+}
+.xl-btn-negate-inline:hover {
+  background: #dc2626 !important;
+  color: #ffffff !important;
 }
 
 /* 批量操作控制条 */
@@ -1420,7 +1488,7 @@
 .xl-theme-dark .xl-copyright { color: #64748b !important; }
 
 /* ==========================================================
-   4. 行内诊断徽章（在亚马逊后台关键词/广告活动表格中随看随显）
+   4. 修复 1.3 & 3.1：行内诊断徽章（固定在第1列名称处、小巧精致、Tooltip 智能朝向）
    ========================================================== */
 .xl-inline-badge {
   position: relative !important;
@@ -1428,63 +1496,63 @@
   align-items: center !important;
   margin-left: 4px !important;
   margin-top: 2px !important;
-  padding: 1px 6px !important;
-  border-radius: 4px !important;
-  font-size: 10.5px !important;
+  padding: 0px 5px !important;
+  border-radius: 3px !important;
+  font-size: 9.5px !important;
   font-weight: 700 !important;
   cursor: pointer !important;
   user-select: none !important;
   vertical-align: middle !important;
-  line-height: 15px !important;
-  height: 18px !important;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1) !important;
+  line-height: 14px !important;
+  height: 15px !important;
+  width: fit-content !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08) !important;
   transition: transform 0.15s !important;
-  z-index: 100 !important;
+  z-index: 25 !important;
   white-space: nowrap !important;
 }
 
-.xl-inline-badge:hover {
-  transform: translateY(-1px) scale(1.02) !important;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.15) !important;
+.xl-inline-badge:hover,
+.xl-inline-badge.xl-pinned {
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.18) !important;
+  z-index: 2147483640 !important;
 }
 
 .xl-badge-danger {
   background-color: #fee2e2 !important;
   color: #b91c1c !important;
-  border: 1px solid #ef4444 !important;
+  border: 1px solid #f87171 !important;
 }
 
 .xl-badge-warning {
   background-color: #fef3c7 !important;
   color: #b45309 !important;
-  border: 1px solid #f59e0b !important;
+  border: 1px solid #fbbf24 !important;
 }
 
 .xl-badge-success {
   background-color: #dcfce7 !important;
   color: #15803d !important;
-  border: 1px solid #10b981 !important;
+  border: 1px solid #34d399 !important;
 }
 
 .xl-badge-info {
   background-color: #e0f2fe !important;
   color: #0369a1 !important;
-  border: 1px solid #0284c7 !important;
+  border: 1px solid #38bdf8 !important;
 }
 
-/* 行内 Tooltip 悬浮卡 */
+/* 修复 3.1：行内 Tooltip 悬浮卡支持智能朝下/朝上展开，彻底告别被顶部表头顶住遮挡 */
 .xl-inline-tooltip {
   display: none !important;
   position: absolute !important;
-  bottom: calc(100% + 6px) !important;
-  left: 50% !important;
-  transform: translateX(-50%) !important;
-  width: 260px !important;
+  left: 0 !important;
+  width: 265px !important;
   background: #0f172a !important;
   border: 1px solid #475569 !important;
   border-radius: 8px !important;
   padding: 10px 12px !important;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.6) !important;
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.65) !important;
   color: #f1f5f9 !important;
   z-index: 2147483647 !important;
   text-align: left !important;
@@ -1492,16 +1560,33 @@
   cursor: default !important;
 }
 
-/* 核心修复：透明悬浮桥梁 (解决鼠标往上移动到按钮时中间有缝隙导致消失的 Bug) */
+.xl-inline-tooltip.xl-tooltip-down {
+  top: calc(100% + 6px) !important;
+  bottom: auto !important;
+}
+
+.xl-inline-tooltip.xl-tooltip-up {
+  bottom: calc(100% + 6px) !important;
+  top: auto !important;
+}
+
+/* 透明悬浮桥梁，防止鼠标移向弹窗按钮时闪烁消失 */
 .xl-inline-tooltip::after {
   content: '' !important;
   position: absolute !important;
-  bottom: -16px !important;
   left: 0 !important;
   width: 100% !important;
-  height: 20px !important;
+  height: 18px !important;
   background: transparent !important;
   pointer-events: auto !important;
+}
+
+.xl-inline-tooltip.xl-tooltip-up::after {
+  bottom: -16px !important;
+}
+
+.xl-inline-tooltip.xl-tooltip-down::after {
+  top: -16px !important;
 }
 
 .xl-inline-badge:hover .xl-inline-tooltip,
@@ -1597,8 +1682,8 @@
   font-size: 12px !important;
   font-weight: 600 !important;
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4) !important;
-  border-left: 4px solid #10b981 !important;
   border: 1px solid #334155 !important;
+  border-left: 4px solid #10b981 !important;
   opacity: 0 !important;
   transform: translateY(-10px) !important;
   transition: opacity 0.25s ease, transform 0.25s ease !important;
@@ -1693,7 +1778,7 @@
   color: #0f172a !important;
 }
 
-/* 彻底隐藏数字输入框在Chrome/Edge下的微型上下箭头，保证0.02完整清晰居中显示 */
+/* 彻底隐藏数字输入框在Chrome/Edge下的微型上下箭头 */
 .xl-adjust-input-wrap input::-webkit-outer-spin-button,
 .xl-adjust-input-wrap input::-webkit-inner-spin-button,
 .xl-boost-param-item input::-webkit-outer-spin-button,

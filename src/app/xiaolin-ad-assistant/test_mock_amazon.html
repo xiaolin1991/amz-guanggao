@@ -295,18 +295,18 @@
           <td>-</td>
         </tr>
 
-        <!-- 案例 9：真实截图中的 facial face roller (展现量 77次，竞价 1.06，验证列精确对齐与原生编辑) -->
+        <!-- 案例 9：真实截图图二中的 facial face roller (展现量 77次，原生输入框竞价 1.06，状态“不完整”，验证不误抓1.35/1.0，不误判曝光不足) -->
         <tr>
           <td><input type="checkbox"></td>
           <td><input type="checkbox" checked></td>
           <td>
-            <span class="kw-name">facial face roller</span>
-            <span class="kw-sub">面部按摩滚轮 ⓘ</span>
+            <div>facial face roller</div>
+            <div style="font-size:11px;color:#6b7280;">面部按摩滚轮 <span title="翻译仅供参考">ⓘ</span></div>
           </td>
           <td>广泛</td>
-          <td>进行中</td>
-          <td>US$1.14 (US$0.86-US$1.42)</td>
-          <td>US$1.06</td>
+          <td><span title="不完整">不完整 ⓘ</span></td>
+          <td>US$1.14 (US$0.86-US$1.42) <button type="button" style="font-size:11px;padding:1px 6px;">应用</button></td>
+          <td><span>US$</span><input type="text" value="1.06" style="width:58px;padding:2px 4px;border:1px solid #cbd5e1;border-radius:4px;font-weight:bold;"></td>
           <td>77</td>
           <td>&lt;5%</td>
           <td>1</td>
@@ -316,6 +316,29 @@
           <td>US$0.00</td>
           <td>-</td>
           <td>-</td>
+        </tr>
+
+        <!-- 案例 9B：真实截图图三底部的 0 曝光词 face massager roller (展示量为 —，原生输入框竞价 1.14，验证 0 曝光词正常识别激活) -->
+        <tr>
+          <td><input type="checkbox"></td>
+          <td><input type="checkbox" checked></td>
+          <td>
+            <div>face massager roller</div>
+            <div style="font-size:11px;color:#6b7280;">脸部按摩滚轮 <span title="翻译仅供参考">ⓘ</span></div>
+          </td>
+          <td>精准</td>
+          <td>进行中</td>
+          <td>US$1.06 (US$0.75-US$1.38) <button type="button" style="font-size:11px;padding:1px 6px;">应用</button></td>
+          <td><span>US$</span><input type="text" value="1.14" style="width:58px;padding:2px 4px;border:1px solid #cbd5e1;border-radius:4px;font-weight:bold;"></td>
+          <td>—</td>
+          <td>—</td>
+          <td>—</td>
+          <td>—</td>
+          <td>—</td>
+          <td>—</td>
+          <td>—</td>
+          <td>—</td>
+          <td>—</td>
         </tr>
 
         <!-- 案例 10：自动广告投放 (自动 - 紧密匹配，展示仅 3 次，低曝光激活) -->
@@ -466,8 +489,9 @@
   <!-- 引入插件核心脚本与样式 -->
   <link rel="stylesheet" href="content/content.css">
   <script>
-    if (typeof chrome === 'undefined' || !chrome.storage) {
-      window.chrome = {
+    if (typeof window.chrome === 'undefined') window.chrome = {};
+    if (!window.chrome.storage) {
+      Object.assign(window.chrome, {
         storage: {
           local: {
             get: function(keys, cb) {
@@ -521,7 +545,7 @@
             }
           }
         }
-      };
+      });
     }
   </script>
   <script src="content/analyzer.js"></script>
