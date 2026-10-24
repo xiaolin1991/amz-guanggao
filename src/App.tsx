@@ -20,6 +20,7 @@ import { MOCK_AD_ITEMS } from './data/mockBulkData';
 
 import { Header } from './components/Header';
 import { TutorialModal } from './components/TutorialModal';
+import { ExtensionModal } from './components/ExtensionModal';
 import { FileUploader } from './components/FileUploader';
 import { ConfigBar } from './components/ConfigBar';
 import { MetricsDashboard } from './components/MetricsDashboard';
@@ -43,6 +44,9 @@ export const App: React.FC = () => {
 
   // Dedicated Fullscreen Workbench modal state
   const [isFullscreenWorkspace, setIsFullscreenWorkspace] = useState<boolean>(false);
+
+  // Dedicated Browser Extension Download & Tutorial modal state
+  const [isExtensionModalOpen, setIsExtensionModalOpen] = useState<boolean>(false);
 
   // History records list
   const [historyRecords, setHistoryRecords] = useState<HistoryRecord[]>([]);
@@ -368,6 +372,7 @@ export const App: React.FC = () => {
       {/* Top Header */}
       <Header
         onOpenTutorial={() => setIsTutorialOpen(true)}
+        onOpenExtensionModal={() => setIsExtensionModalOpen(true)}
         onLoadDemo={handleLoadDemo}
         onGoHome={handleReset}
         hasData={items.length > 0}
@@ -383,6 +388,7 @@ export const App: React.FC = () => {
           <FileUploader
             onFileLoaded={handleFileLoaded}
             onLoadDemo={handleLoadDemo}
+            onOpenExtensionModal={() => setIsExtensionModalOpen(true)}
             isLoading={isLoading}
             historyRecords={historyRecords}
             onLoadHistory={handleLoadHistory}
@@ -524,10 +530,19 @@ export const App: React.FC = () => {
       <TutorialModal
         isOpen={isTutorialOpen}
         onClose={() => setIsTutorialOpen(false)}
+        onOpenExtensionModal={() => setIsExtensionModalOpen(true)}
+      />
+
+      {/* Browser Extension Download & Tutorial Modal */}
+      <ExtensionModal
+        isOpen={isExtensionModalOpen}
+        onClose={() => setIsExtensionModalOpen(false)}
       />
 
       {/* Floating Online Customer Support & Back to Top */}
-      <FloatingSupport />
+      <FloatingSupport 
+        onOpenExtensionModal={() => setIsExtensionModalOpen(true)}
+      />
     </div>
   );
 };

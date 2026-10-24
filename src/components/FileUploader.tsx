@@ -8,13 +8,17 @@ import {
   Trash2, 
   ChevronRight, 
   FileText,
-  DollarSign
+  DollarSign,
+  Puzzle,
+  Download,
+  ArrowRight
 } from 'lucide-react';
 import { HistoryRecord } from '../utils/historyDb';
 
 interface FileUploaderProps {
   onFileLoaded: (fileBuffer: ArrayBuffer, fileName: string) => void;
   onLoadDemo: () => void;
+  onOpenExtensionModal?: () => void;
   isLoading: boolean;
   historyRecords: HistoryRecord[];
   onLoadHistory: (record: HistoryRecord) => void;
@@ -25,6 +29,7 @@ interface FileUploaderProps {
 export const FileUploader: React.FC<FileUploaderProps> = ({
   onFileLoaded,
   onLoadDemo,
+  onOpenExtensionModal,
   isLoading,
   historyRecords,
   onLoadHistory,
@@ -61,6 +66,42 @@ export const FileUploader: React.FC<FileUploaderProps> = ({
           <ShieldCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
           <span>数据在本地浏览器沙盒内存中完成解析，<strong>绝不向任何外部服务器上传</strong>您的店铺与广告数据</span>
         </div>
+      </div>
+
+      {/* Browser Extension Announcement Hero Banner */}
+      <div className="bg-gradient-to-r from-amber-500/15 via-amber-500/5 to-transparent border border-amber-300 dark:border-amber-800/80 rounded-3xl p-5 sm:p-6 shadow-sm flex flex-col md:flex-row items-center justify-between gap-5 transition-all">
+        <div className="flex items-start gap-4">
+          <div className="w-12 h-12 rounded-2xl bg-amber-500 text-slate-950 flex items-center justify-center flex-shrink-0 shadow-md shadow-amber-500/20">
+            <Puzzle className="w-6 h-6" />
+          </div>
+          <div>
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-amber-500 text-slate-950 uppercase tracking-wide">
+                全新发布
+              </span>
+              <h4 className="text-sm sm:text-base font-extrabold text-slate-900 dark:text-white">
+                晓林广告助手【浏览器插件 v1.7.0】
+              </h4>
+              <span className="text-xs text-slate-500 dark:text-slate-400">
+                · 适配紫鸟超级浏览器 / Hubstudio / 谷歌 Chrome
+              </span>
+            </div>
+            <p className="text-xs text-slate-600 dark:text-slate-300 mt-1 max-w-2xl leading-relaxed">
+              无需频繁手动导出报表，直接在亚马逊卖家后台<strong>实时透视广告关键词、识别0单吸血词、自动拓展买家搜索长尾下拉词、狙击弱势竞品 ASIN</strong>！
+            </p>
+          </div>
+        </div>
+
+        {onOpenExtensionModal && (
+          <button
+            onClick={onOpenExtensionModal}
+            className="flex-shrink-0 flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-400 hover:from-amber-400 hover:to-amber-300 text-slate-950 font-black text-xs sm:text-sm shadow-md shadow-amber-500/20 transition active:scale-95"
+          >
+            <Download className="w-4 h-4" />
+            <span>免费下载插件 &amp; 图文安装教程</span>
+            <ArrowRight className="w-4 h-4" />
+          </button>
+        )}
       </div>
 
       {/* Drop Zone Box */}

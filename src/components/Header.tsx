@@ -1,8 +1,9 @@
 import React from 'react';
-import { ShieldCheck, BookOpen, Sparkles, RefreshCw, Home, Sun, Moon } from 'lucide-react';
+import { ShieldCheck, BookOpen, Sparkles, RefreshCw, Home, Sun, Moon, Puzzle } from 'lucide-react';
 
 interface HeaderProps {
   onOpenTutorial: () => void;
+  onOpenExtensionModal: () => void;
   onLoadDemo: () => void;
   onGoHome: () => void;
   hasData: boolean;
@@ -12,6 +13,7 @@ interface HeaderProps {
 
 export const Header: React.FC<HeaderProps> = ({
   onOpenTutorial,
+  onOpenExtensionModal,
   onLoadDemo,
   onGoHome,
   hasData,
@@ -77,6 +79,19 @@ export const Header: React.FC<HeaderProps> = ({
             ) : (
               <Sun className="w-4 h-4 text-amber-400" />
             )}
+          </button>
+
+          {/* Browser Extension Download Button */}
+          <button
+            onClick={onOpenExtensionModal}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold text-amber-950 dark:text-slate-900 bg-gradient-to-r from-amber-400 to-amber-300 hover:from-amber-300 hover:to-amber-200 transition shadow-sm active:scale-95"
+            title="免费下载晓林广告助手浏览器插件（支持紫鸟/Hubstudio/Chrome）"
+          >
+            <Puzzle className="w-3.5 h-3.5 text-amber-950" />
+            <span>浏览器插件下载</span>
+            <span className="hidden sm:inline-block px-1.5 py-0.2 rounded-full text-[10px] bg-amber-950/15 text-amber-950 font-black">
+              v1.7.0
+            </span>
           </button>
 
           <button

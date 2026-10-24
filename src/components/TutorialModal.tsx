@@ -7,15 +7,17 @@ import {
   FileSpreadsheet, 
   UploadCloud, 
   Download, 
-  ShieldCheck
+  ShieldCheck,
+  Puzzle
 } from 'lucide-react';
 
 interface TutorialModalProps {
   isOpen: boolean;
   onClose: () => void;
+  onOpenExtensionModal?: () => void;
 }
 
-export const TutorialModal: React.FC<TutorialModalProps> = ({ isOpen, onClose }) => {
+export const TutorialModal: React.FC<TutorialModalProps> = ({ isOpen, onClose, onOpenExtensionModal }) => {
   const [activeTab, setActiveTab] = useState<'download' | 'upload' | 'faq'>('download');
 
   if (!isOpen) return null;
@@ -49,6 +51,26 @@ export const TutorialModal: React.FC<TutorialModalProps> = ({ isOpen, onClose })
             <X className="w-5 h-5" />
           </button>
         </div>
+
+        {/* Browser Extension Announcement Banner inside Tutorial Modal */}
+        {onOpenExtensionModal && (
+          <div className="bg-gradient-to-r from-amber-500/15 via-amber-500/5 to-transparent px-6 py-2.5 border-b border-amber-200/80 dark:border-amber-900/40 flex flex-wrap items-center justify-between gap-3 text-xs">
+            <div className="flex items-center gap-2 text-slate-800 dark:text-slate-200">
+              <span className="px-1.5 py-0.5 rounded-md bg-amber-500 text-slate-950 font-black text-[10px]">NEW</span>
+              <span><strong>更快捷方式：</strong>安装晓林广告助手浏览器插件，无需下载报表，直接在亚马逊后台实时调价诊断！</span>
+            </div>
+            <button
+              onClick={() => {
+                onClose();
+                onOpenExtensionModal();
+              }}
+              className="text-amber-700 dark:text-amber-400 font-bold hover:underline flex items-center gap-1 flex-shrink-0"
+            >
+              <Puzzle className="w-3.5 h-3.5" />
+              <span>下载浏览器插件 (紫鸟/Hubstudio/Chrome) &gt;</span>
+            </button>
+          </div>
+        )}
 
         {/* Tab Switcher */}
         <div className="flex border-b border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/30 px-6 pt-2 gap-4">

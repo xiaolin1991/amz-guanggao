@@ -1,9 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { Headphones, ArrowUp, X, MessageCircle, MessageSquare, QrCode } from 'lucide-react';
+import { Headphones, ArrowUp, X, MessageCircle, MessageSquare, QrCode, Puzzle } from 'lucide-react';
 import qqImg from '../IMG/QQ.jpg';
 import weixinImg from '../IMG/weixin.jpg';
 
-export const FloatingSupport: React.FC = () => {
+interface FloatingSupportProps {
+  onOpenExtensionModal?: () => void;
+}
+
+export const FloatingSupport: React.FC<FloatingSupportProps> = ({ onOpenExtensionModal }) => {
   const [showScrollTop, setShowScrollTop] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<'weixin' | 'qq'>('weixin');
@@ -135,6 +139,18 @@ export const FloatingSupport: React.FC = () => {
 
       {/* Action Buttons Stack */}
       <div className="flex flex-col items-end gap-2.5">
+        {/* Browser Plugin Download Pill */}
+        {onOpenExtensionModal && (
+          <button
+            onClick={onOpenExtensionModal}
+            className="flex items-center gap-1.5 px-3 py-2 rounded-full font-bold text-xs bg-gradient-to-r from-amber-500 to-amber-400 hover:from-amber-400 hover:to-amber-300 text-slate-950 shadow-lg shadow-amber-500/25 transition-all duration-200 border border-amber-300 active:scale-95 group"
+            title="点击下载晓林广告助手浏览器插件 (紫鸟/Hubstudio/Chrome)"
+          >
+            <Puzzle className="w-3.5 h-3.5 text-slate-950 group-hover:rotate-12 transition-transform" />
+            <span>插件下载</span>
+          </button>
+        )}
+
         {/* Customer Support Pill Button (Default Collapsed) */}
         <button
           onClick={() => setIsOpen(!isOpen)}
