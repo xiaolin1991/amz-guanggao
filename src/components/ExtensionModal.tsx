@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { 
   X, 
   Download, 
@@ -9,6 +9,7 @@ import {
   CheckCircle2, 
   AlertTriangle, 
   ShieldCheck, 
+  ShieldAlert,
   HelpCircle, 
   Layers, 
   ArrowRight, 
@@ -33,19 +34,60 @@ interface ExtensionModalProps {
 }
 
 export const ExtensionModal: React.FC<ExtensionModalProps> = ({ isOpen, onClose }) => {
-  const [activeBrowser, setActiveBrowser] = useState<'ziniao' | 'hubstudio' | 'chrome'>('ziniao');
+  // Intelligent Client Browser Detection
+  const browserInfo = useMemo(() => {
+    const ua = typeof navigator !== 'undefined' ? navigator.userAgent : '';
+    const uaLower = ua.toLowerCase();
+    const isZiniao = uaLower.includes('superbrowser') || uaLower.includes('ziniao');
+    const isHubstudio = uaLower.includes('hubstudio');
+    const isEdge = uaLower.includes('edg/');
+    const isChrome = Boolean((window as any).chrome) && !isEdge && !isZiniao && !isHubstudio;
+    // Google Chrome & Edge strictly reject off-store CRX with "CRX_REQUIRED_PROOF_MISSING"
+    const isStrictCrxBlocked = isChrome || isEdge;
+
+    let detectedTab: 'ziniao' | 'hubstudio' | 'chrome' = 'ziniao';
+    if (isHubstudio) detectedTab = 'hubstudio';
+    else if (isChrome || isEdge) detectedTab = 'chrome';
+
+    return {
+      isZiniao,
+      isHubstudio,
+      isChrome,
+      isEdge,
+      isStrictCrxBlocked,
+      detectedTab,
+      browserName: isZiniao 
+        ? '紫鸟超级浏览器' 
+        : isHubstudio 
+        ? 'Hubstudio 指纹浏览器' 
+        : isEdge 
+        ? 'Microsoft Edge' 
+        : isChrome 
+        ? 'Google Chrome' 
+        : '标准浏览器'
+    };
+  }, []);
+
+  const [activeBrowser, setActiveBrowser] = useState<'ziniao' | 'hubstudio' | 'chrome'>(() => browserInfo.detectedTab);
   const [copiedUrl, setCopiedUrl] = useState(false);
   const [showCrxGuide, setShowCrxGuide] = useState(false);
+  const [showCrxInterceptModal, setShowCrxInterceptModal] = useState<boolean>(false);
 
   // Close on Escape key
   useEffect(() => {
     if (!isOpen) return;
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
+      if (e.key === 'Escape') {
+        if (showCrxInterceptModal) {
+          setShowCrxInterceptModal(false);
+        } else {
+          onClose();
+        }
+      }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, onClose]);
+  }, [isOpen, onClose, showCrxInterceptModal]);
 
   if (!isOpen) return null;
 
@@ -69,6 +111,15 @@ export const ExtensionModal: React.FC<ExtensionModalProps> = ({ isOpen, onClose 
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
+  };
+
+  // Intercept CRX download attempts in Chrome/Edge to prevent CRX_REQUIRED_PROOF_MISSING error
+  const handleCrxDownloadClick = () => {
+    if (browserInfo.isStrictCrxBlocked) {
+      setShowCrxInterceptModal(true);
+    } else {
+      handleDirectDownload('crx');
+    }
   };
 
   return (
@@ -171,27 +222,61 @@ export const ExtensionModal: React.FC<ExtensionModalProps> = ({ isOpen, onClose 
                   <div className="flex items-center gap-2.5">
                     <FolderArchive className="w-5 h-5 flex-shrink-0" />
                     <div className="text-left">
-                      <div className="leading-tight">下载 ZIP 安装包</div>
-                      <div className="text-[10px] font-normal opacity-80">推荐 · 解压加载 · 100% 成功</div>
+                      <div className="leading-tight flex items-center gap-1.5">
+                        <span>下载 ZIP 安装包</span>
+                        {browserInfo.isStrictCrxBlocked && (
+                          <span className="px-1.5 py-0.2 rounded text-[10px] bg-slate-950/20 text-slate-950 font-bold">
+                            {browserInfo.browserName.includes('Chrome') ? 'Chrome专属推荐' : '推荐'}
+                          </span>
+                        )}
+                      </div>
+                      <div className="text-[10px] font-normal opacity-90">
+                        {browserInfo.isStrictCrxBlocked 
+                          ? '解压加载 · 100% 成功 · 绝不报签名错误' 
+                          : '推荐 · 解压加载 · 100% 成功'}
+                      </div>
                     </div>
                   </div>
                   <Download className="w-4 h-4 flex-shrink-0" />
                 </button>
 
-                {/* Method 2: CRX (Alternative) */}
+                {/* Method 2: CRX (Alternative / Intercepted in Chrome) */}
                 <button
-                  onClick={() => handleDirectDownload('crx')}
-                  className="w-full flex items-center justify-between gap-3 px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-semibold transition"
-                  title="适用于支持 CRX 拖入安装的浏览器"
+                  onClick={handleCrxDownloadClick}
+                  className={`w-full flex items-center justify-between gap-3 px-4 py-2.5 rounded-xl border text-xs font-semibold transition group ${
+                    browserInfo.isStrictCrxBlocked
+                      ? 'bg-slate-800/80 hover:bg-slate-700/80 text-slate-300 border-amber-500/40 hover:border-amber-400'
+                      : 'bg-slate-800 hover:bg-slate-700 text-slate-200 border-slate-700'
+                  }`}
+                  title={
+                    browserInfo.isStrictCrxBlocked 
+                      ? 'Google Chrome 限制外部 CRX 直装，点击查看解决方案' 
+                      : '适用于支持 CRX 拖入安装的浏览器'
+                  }
                 >
                   <div className="flex items-center gap-2.5">
-                    <Package className="w-4 h-4 text-slate-400 flex-shrink-0" />
+                    <Package className={`w-4 h-4 flex-shrink-0 ${browserInfo.isStrictCrxBlocked ? 'text-amber-400' : 'text-slate-400'}`} />
                     <div className="text-left">
-                      <div>下载 CRX 安装包</div>
-                      <div className="text-[10px] text-slate-400 font-normal">支持直接拖拽安装</div>
+                      <div className="flex items-center gap-1.5">
+                        <span>下载 CRX 安装包</span>
+                        {browserInfo.isStrictCrxBlocked && (
+                          <span className="text-[10px] px-1.5 py-0.2 rounded bg-rose-500/20 text-rose-300 border border-rose-500/30 font-bold">
+                            Chrome受限
+                          </span>
+                        )}
+                      </div>
+                      <div className="text-[10px] text-slate-400 font-normal">
+                        {browserInfo.isStrictCrxBlocked 
+                          ? '点击查看谷歌拦截说明 & 替代方案' 
+                          : '支持直接拖拽安装'}
+                      </div>
                     </div>
                   </div>
-                  <Download className="w-3.5 h-3.5 text-slate-400 flex-shrink-0" />
+                  {browserInfo.isStrictCrxBlocked ? (
+                    <AlertTriangle className="w-3.5 h-3.5 text-amber-400 flex-shrink-0 group-hover:scale-110 transition-transform" />
+                  ) : (
+                    <Download className="w-3.5 h-3.5 text-slate-400 flex-shrink-0" />
+                  )}
                 </button>
               </div>
 
@@ -585,16 +670,33 @@ export const ExtensionModal: React.FC<ExtensionModalProps> = ({ isOpen, onClose 
             {/* TAB CONTENT 3: Chrome / Edge 标准浏览器教程 */}
             {activeBrowser === 'chrome' && (
               <div className="space-y-4 animate-in fade-in duration-200">
-                <div className="bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900/30 rounded-2xl p-4 text-xs text-amber-900 dark:text-amber-200 flex items-start gap-3">
-                  <div className="p-1.5 bg-amber-500 text-slate-950 rounded-lg flex-shrink-0 mt-0.5">
-                    <Info className="w-4 h-4" />
+                {/* Visual Error Explanation Banner */}
+                <div className="bg-rose-50 dark:bg-rose-950/30 border border-rose-300 dark:border-rose-900/50 rounded-2xl p-4 text-xs text-rose-950 dark:text-rose-200 space-y-2.5 shadow-sm">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2 font-bold text-sm text-rose-700 dark:text-rose-300">
+                      <AlertTriangle className="w-4 h-4 text-rose-600 flex-shrink-0" />
+                      <span>Chrome 常见报错：程序包无效 "CRX_REQUIRED_PROOF_MISSING" 原理说明</span>
+                    </div>
+                    <span className="px-2 py-0.5 rounded text-[10px] bg-rose-200 dark:bg-rose-900/60 text-rose-800 dark:text-rose-200 font-bold">
+                      谷歌内核限制
+                    </span>
                   </div>
-                  <div>
-                    <strong className="text-sm">Google Chrome &amp; 微软 Edge 标准安装流程：</strong>
-                    <p className="mt-1 leading-relaxed opacity-90">
-                      因谷歌新版 Chromium 限制未上架 Web Store 的 `.crx` 拖入，<strong>最稳妥、绝不报错的方式是使用【ZIP 解压加载法】</strong>（耗时仅需 30 秒）。
-                    </p>
+
+                  {/* Visual mockup of the Chrome error */}
+                  <div className="bg-white dark:bg-slate-900 border border-rose-300 dark:border-rose-800 rounded-xl px-3.5 py-2 flex items-center justify-between font-mono text-[11px] text-slate-800 dark:text-slate-200 shadow-inner">
+                    <span className="flex items-center gap-2">
+                      <span className="w-2 h-2 rounded-full bg-rose-500 animate-ping" />
+                      <span>程序包无效: <strong className="text-rose-600 dark:text-rose-400">"CRX_REQUIRED_PROOF_MISSING"</strong></span>
+                    </span>
+                    <span className="px-2.5 py-0.5 bg-blue-600 text-white rounded text-[10px] font-sans font-bold">确定</span>
                   </div>
+
+                  <p className="leading-relaxed text-[11px] text-slate-700 dark:text-slate-300">
+                    <strong>为什么 Chrome 会弹窗报错？</strong> 谷歌在新版 Chromium 中加固了签名机制，直接在网页下载或拖拽未上架 Google Web Store 的 <code className="px-1 py-0.5 bg-rose-100 dark:bg-rose-900/40 rounded font-mono">.crx</code> 文件时，浏览器底层会因缺少谷歌官方 proof 签名而直接拦截并报错。
+                  </p>
+                  <p className="leading-relaxed text-[11px] font-semibold text-emerald-700 dark:text-emerald-400">
+                    ✅ <strong>100% 成功解决方案：</strong>请直接使用下方的<strong>【4 步 ZIP 解压加载法】</strong>（开发者模式 ➔ 加载已解压的扩展程序）。这是谷歌官方为独立开发者扩展预留的正规通道，无需任何官方签名，30 秒即可加载成功且永久稳定！
+                  </p>
                 </div>
 
                 {/* Chrome 4 Steps */}
@@ -744,6 +846,98 @@ export const ExtensionModal: React.FC<ExtensionModalProps> = ({ isOpen, onClose 
         </div>
 
       </div>
+
+      {/* Google Chrome & Edge CRX Interception Modal */}
+      {showCrxInterceptModal && (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-150">
+          <div 
+            className="fixed inset-0"
+            onClick={() => setShowCrxInterceptModal(false)}
+          />
+          <div className="relative bg-slate-900 border border-slate-700 w-full max-w-lg rounded-3xl p-6 sm:p-7 space-y-5 shadow-2xl text-slate-100 z-10 animate-in zoom-in-95 duration-150">
+            {/* Header */}
+            <div className="flex items-start justify-between gap-3 border-b border-slate-800 pb-4">
+              <div className="flex items-center gap-3">
+                <div className="w-11 h-11 rounded-2xl bg-amber-500/20 border border-amber-500/40 text-amber-400 flex items-center justify-center flex-shrink-0 shadow-inner">
+                  <ShieldAlert className="w-6 h-6" />
+                </div>
+                <div>
+                  <h3 className="font-black text-base text-white">
+                    Google Chrome 安全策略拦截提示
+                  </h3>
+                  <p className="text-xs text-slate-400 mt-0.5">
+                    检测到您当前使用 {browserInfo.browserName}
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowCrxInterceptModal(false)}
+                className="p-1 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Simulated Error Alert Banner */}
+            <div className="bg-slate-950 border border-rose-500/40 rounded-2xl p-3.5 space-y-2">
+              <div className="flex items-center justify-between text-xs font-mono bg-rose-950/40 border border-rose-800/40 rounded-xl px-3 py-2 text-rose-300">
+                <span className="flex items-center gap-1.5 font-bold">
+                  <span>❌ 程序包无效:</span>
+                  <span className="text-rose-200">"CRX_REQUIRED_PROOF_MISSING"</span>
+                </span>
+                <span className="px-2 py-0.5 bg-blue-600 text-white rounded text-[10px] font-sans font-bold">确定</span>
+              </div>
+              <p className="text-[11px] text-slate-400 leading-relaxed">
+                👆 <strong>这是谷歌浏览器的底层策略拦截：</strong>谷歌对所有未上架 Chrome Web Store 官方应用商店的 <code className="text-slate-300 font-mono">.crx</code> 文件进行签名强校验，直接下载或拖入会导致浏览器报错拦截。
+              </p>
+            </div>
+
+            {/* Solution Recommendation */}
+            <div className="bg-emerald-950/30 border border-emerald-500/30 rounded-2xl p-4 text-xs text-emerald-200 space-y-2">
+              <div className="font-bold flex items-center gap-2 text-emerald-300">
+                <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0" />
+                <span>官方推荐唯一 100% 成功安装方案：</span>
+              </div>
+              <p className="text-slate-300 leading-relaxed text-[11px]">
+                针对 Google Chrome / Edge，请直接使用<strong>【ZIP 源码安装包】</strong>！下载后解压到文件夹，在 <code className="px-1.5 py-0.5 bg-slate-800 rounded font-mono text-emerald-400">chrome://extensions/</code> 开启【开发者模式】，点击【加载已解压的扩展程序】即可秒级安装，<strong>完全避开谷歌签名校验，100% 成功且稳定可用！</strong>
+              </p>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="space-y-2.5 pt-1">
+              <button
+                onClick={() => {
+                  setShowCrxInterceptModal(false);
+                  handleDirectDownload('zip');
+                }}
+                className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-amber-500 to-amber-400 hover:from-amber-400 hover:to-amber-300 text-slate-950 font-black text-sm shadow-lg shadow-amber-500/20 transition active:scale-95 flex items-center justify-center gap-2"
+              >
+                <FolderArchive className="w-4 h-4" />
+                <span>立即改下 ZIP 安装包 (强烈推荐 · 100% 成功)</span>
+                <ArrowRight className="w-4 h-4" />
+              </button>
+
+              <div className="flex items-center justify-between text-xs pt-1">
+                <button
+                  onClick={() => setShowCrxInterceptModal(false)}
+                  className="text-slate-400 hover:text-white transition"
+                >
+                  取消
+                </button>
+                <button
+                  onClick={() => {
+                    setShowCrxInterceptModal(false);
+                    handleDirectDownload('crx');
+                  }}
+                  className="text-slate-500 hover:text-amber-400 transition text-[11px] underline"
+                >
+                  我已知晓，仍要强制下载 .CRX 文件
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
