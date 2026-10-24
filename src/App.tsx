@@ -19,6 +19,7 @@ import {
 import { MOCK_AD_ITEMS } from './data/mockBulkData';
 
 import { Header } from './components/Header';
+import { LandingPage } from './components/LandingPage';
 import { TutorialModal } from './components/TutorialModal';
 import { ExtensionModal } from './components/ExtensionModal';
 import { FileUploader } from './components/FileUploader';
@@ -47,6 +48,9 @@ export const App: React.FC = () => {
 
   // Dedicated Browser Extension Download & Tutorial modal state
   const [isExtensionModalOpen, setIsExtensionModalOpen] = useState<boolean>(false);
+
+  // Active View State: 'home' for rich modern presentation homepage, 'workbench' for ad table analysis workspace
+  const [currentView, setCurrentView] = useState<'home' | 'workbench'>('home');
 
   // History records list
   const [historyRecords, setHistoryRecords] = useState<HistoryRecord[]>([]);
@@ -133,6 +137,7 @@ export const App: React.FC = () => {
       await saveHistoryReport(historyItem);
       const updatedRecords = await getHistoryReports();
       setHistoryRecords(updatedRecords);
+      setCurrentView('workbench');
     } catch (err: any) {
       alert(`解析失败: ${err.message || '文件格式不正确，请确保上传亚马逊官方报表'}`);
     } finally {
@@ -153,6 +158,7 @@ export const App: React.FC = () => {
     setFileName(record.fileName);
     setCustomBidOverrides({});
     setActionSelectionOverrides({});
+    setCurrentView('workbench');
   };
 
   // Delete single history record
@@ -185,6 +191,7 @@ export const App: React.FC = () => {
     setFileName('演示数据_Amazon_Bulk_SP_30Days.xlsx');
     setCustomBidOverrides({});
     setActionSelectionOverrides({});
+    setCurrentView('workbench');
   };
 
   // Reset / Return to Home
@@ -194,6 +201,7 @@ export const App: React.FC = () => {
     setFileName('');
     setCustomBidOverrides({});
     setActionSelectionOverrides({});
+    setCurrentView('home');
   };
 
   // Run diagnosis whenever items or config changes
@@ -371,11 +379,13 @@ export const App: React.FC = () => {
     <div className="min-h-screen flex flex-col bg-slate-100 dark:bg-slate-950 text-slate-800 dark:text-slate-100 pb-28 transition-colors">
       {/* Top Header */}
       <Header
+        currentView={currentView}
+        onChangeView={setCurrentView}
         onOpenTutorial={() => setIsTutorialOpen(true)}
         onOpenExtensionModal={() => setIsExtensionModalOpen(true)}
         onLoadDemo={handleLoadDemo}
-        onGoHome={handleReset}
         hasData={items.length > 0}
+        loadedItemCount={items.length}
         theme={theme}
         onToggleTheme={handleToggleTheme}
       />
@@ -384,19 +394,37 @@ export const App: React.FC = () => {
       <main className={`flex-1 w-full mx-auto px-3 sm:px-6 py-6 space-y-6 transition-all duration-300 ${
         isFullWidth ? 'max-w-[99%]' : 'max-w-[95%] 2xl:max-w-[1700px]'
       }`}>
-        {items.length === 0 ? (
-          <FileUploader
-            onFileLoaded={handleFileLoaded}
+        {currentView === 'home' && (
+          <LandingPage
+            onEnterWorkbench={() => setCurrentView('workbench')}
             onLoadDemo={handleLoadDemo}
             onOpenExtensionModal={() => setIsExtensionModalOpen(true)}
-            isLoading={isLoading}
+            onOpenTutorial={() => setIsTutorialOpen(true)}
+            onFileLoaded={handleFileLoaded}
             historyRecords={historyRecords}
             onLoadHistory={handleLoadHistory}
             onDeleteHistory={handleDeleteHistory}
             onClearHistory={handleClearHistory}
+            hasLoadedData={items.length > 0}
+            loadedItemCount={items.length}
           />
-        ) : (
-          <>
+        )}
+
+        {currentView === 'workbench' && (
+          items.length === 0 ? (
+            <FileUploader
+              onFileLoaded={handleFileLoaded}
+              onLoadDemo={handleLoadDemo}
+              onOpenExtensionModal={() => setIsExtensionModalOpen(true)}
+              onGoHome={() => setCurrentView('home')}
+              isLoading={isLoading}
+              historyRecords={historyRecords}
+              onLoadHistory={handleLoadHistory}
+              onDeleteHistory={handleDeleteHistory}
+              onClearHistory={handleClearHistory}
+            />
+          ) : (
+            <>
             {/* File Info Bar */}
             <div className="flex flex-wrap items-center justify-between bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2.5 text-xs shadow-sm transition-colors gap-2">
               <div className="flex items-center gap-2">
@@ -408,6 +436,13 @@ export const App: React.FC = () => {
                 </span>
               </div>
               <div className="flex items-center gap-3">
+                <button
+                  onClick={() => setCurrentView('home')}
+                  className="text-amber-600 dark:text-amber-400 hover:text-amber-500 font-bold flex items-center gap-1"
+                >
+                  🏠 官网介绍主页
+                </button>
+                <span>·</span>
                 <button
                   onClick={handleReset}
                   className="text-blue-600 dark:text-blue-400 hover:text-blue-500 font-medium flex items-center gap-1"
@@ -523,7 +558,7 @@ export const App: React.FC = () => {
               />
             )}
           </>
-        )}
+        ))}
       </main>
 
       {/* Tutorial Guide Modal */}

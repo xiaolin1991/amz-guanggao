@@ -11,7 +11,8 @@ import {
   DollarSign,
   Puzzle,
   Download,
-  ArrowRight
+  ArrowRight,
+  Home
 } from 'lucide-react';
 import { HistoryRecord } from '../utils/historyDb';
 
@@ -19,6 +20,7 @@ interface FileUploaderProps {
   onFileLoaded: (fileBuffer: ArrayBuffer, fileName: string) => void;
   onLoadDemo: () => void;
   onOpenExtensionModal?: () => void;
+  onGoHome?: () => void;
   isLoading: boolean;
   historyRecords: HistoryRecord[];
   onLoadHistory: (record: HistoryRecord) => void;
@@ -30,6 +32,7 @@ export const FileUploader: React.FC<FileUploaderProps> = ({
   onFileLoaded,
   onLoadDemo,
   onOpenExtensionModal,
+  onGoHome,
   isLoading,
   historyRecords,
   onLoadHistory,
@@ -59,7 +62,23 @@ export const FileUploader: React.FC<FileUploaderProps> = ({
   };
 
   return (
-    <div className="max-w-5xl mx-auto py-8 px-4 space-y-8">
+    <div className="max-w-5xl mx-auto py-6 px-4 space-y-6">
+      {/* Top Navigation Row */}
+      {onGoHome && (
+        <div className="flex items-center justify-between">
+          <button
+            onClick={onGoHome}
+            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-800 transition shadow-sm active:scale-95"
+          >
+            <Home className="w-3.5 h-3.5 text-amber-500" />
+            <span>← 返回官网介绍主页</span>
+          </button>
+          <span className="text-xs text-slate-400 font-mono">
+            广告调价工作台 · 待载入报表
+          </span>
+        </div>
+      )}
+
       {/* Privacy Guarantee Pill */}
       <div className="flex justify-center">
         <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-xs text-slate-600 dark:text-slate-300 shadow-sm">

@@ -1,22 +1,26 @@
 import React from 'react';
-import { ShieldCheck, BookOpen, Sparkles, RefreshCw, Home, Sun, Moon, Puzzle } from 'lucide-react';
+import { ShieldCheck, BookOpen, Sparkles, Home, Sun, Moon, Puzzle, SlidersHorizontal } from 'lucide-react';
 
 interface HeaderProps {
+  currentView: 'home' | 'workbench';
+  onChangeView: (view: 'home' | 'workbench') => void;
   onOpenTutorial: () => void;
   onOpenExtensionModal: () => void;
   onLoadDemo: () => void;
-  onGoHome: () => void;
   hasData: boolean;
+  loadedItemCount: number;
   theme: 'light' | 'dark';
   onToggleTheme: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
+  currentView,
+  onChangeView,
   onOpenTutorial,
   onOpenExtensionModal,
   onLoadDemo,
-  onGoHome,
   hasData,
+  loadedItemCount,
   theme,
   onToggleTheme
 }) => {
@@ -27,9 +31,9 @@ export const Header: React.FC<HeaderProps> = ({
         {/* Brand / Logo & Name */}
         <div className="flex items-center gap-3">
           <button 
-            onClick={onGoHome} 
+            onClick={() => onChangeView('home')} 
             className="flex items-center gap-3 text-left group transition"
-            title="点击返回首页"
+            title="点击返回官网主页"
           >
             <div className="w-11 h-11 flex items-center justify-center relative flex-shrink-0">
               <img 
@@ -43,7 +47,7 @@ export const Header: React.FC<HeaderProps> = ({
                 <h1 className="font-extrabold text-lg text-slate-900 dark:text-white tracking-tight group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors">
                   晓林Amz广告调价助手
                 </h1>
-                <span className="hidden sm:inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/20">
+                <span className="hidden lg:inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/20">
                   <ShieldCheck className="w-3 h-3" /> 纯本地计算·绝对隐私
                 </span>
               </div>
@@ -54,19 +58,60 @@ export const Header: React.FC<HeaderProps> = ({
           </button>
         </div>
 
+        {/* Center / Navigation Tabs */}
+        <div className="hidden md:flex items-center gap-1 bg-slate-100 dark:bg-slate-900/80 p-1 rounded-2xl border border-slate-200 dark:border-slate-800">
+          <button
+            onClick={() => onChangeView('home')}
+            className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold transition ${
+              currentView === 'home'
+                ? 'bg-white dark:bg-slate-800 text-slate-950 dark:text-white shadow-sm'
+                : 'text-slate-600 dark:text-slate-400 hover:text-slate-950 dark:hover:text-white'
+            }`}
+          >
+            <Home className="w-3.5 h-3.5 text-amber-500" />
+            <span>官网主页</span>
+          </button>
+
+          <button
+            onClick={() => onChangeView('workbench')}
+            className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold transition ${
+              currentView === 'workbench'
+                ? 'bg-white dark:bg-slate-800 text-slate-950 dark:text-white shadow-sm'
+                : 'text-slate-600 dark:text-slate-400 hover:text-slate-950 dark:hover:text-white'
+            }`}
+          >
+            <SlidersHorizontal className="w-3.5 h-3.5 text-blue-500" />
+            <span>广告调价工作台</span>
+            {hasData && (
+              <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 font-mono font-bold animate-pulse">
+                {loadedItemCount}
+              </span>
+            )}
+          </button>
+        </div>
+
         {/* Action Controls */}
-        <div className="flex items-center gap-2.5">
-          {/* Home button when data is loaded */}
-          {hasData && (
-            <button
-              onClick={onGoHome}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold text-slate-700 dark:text-slate-200 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 transition shadow-sm active:scale-95"
-              title="返回首页重新选择或上传新报表"
-            >
-              <Home className="w-4 h-4 text-blue-500" />
-              <span>返回首页</span>
-            </button>
-          )}
+        <div className="flex items-center gap-2">
+          {/* Mobile view switch button */}
+          <div className="flex md:hidden items-center">
+            {currentView === 'home' ? (
+              <button
+                onClick={() => onChangeView('workbench')}
+                className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-bold bg-amber-500 text-slate-950 shadow-sm"
+              >
+                <SlidersHorizontal className="w-3.5 h-3.5" />
+                <span>进入工作台</span>
+              </button>
+            ) : (
+              <button
+                onClick={() => onChangeView('home')}
+                className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-bold bg-slate-200 dark:bg-slate-800 text-slate-900 dark:text-white"
+              >
+                <Home className="w-3.5 h-3.5 text-amber-500" />
+                <span>返回主页</span>
+              </button>
+            )}
+          </div>
 
           {/* Light / Dark Toggle */}
           <button
@@ -88,27 +133,33 @@ export const Header: React.FC<HeaderProps> = ({
             title="免费下载晓林广告助手浏览器插件（支持紫鸟/Hubstudio/Chrome）"
           >
             <Puzzle className="w-3.5 h-3.5 text-amber-950" />
-            <span>浏览器插件下载</span>
-            <span className="hidden sm:inline-block px-1.5 py-0.2 rounded-full text-[10px] bg-amber-950/15 text-amber-950 font-black">
+            <span className="hidden sm:inline">浏览器插件下载</span>
+            <span className="sm:hidden">插件</span>
+            <span className="hidden xl:inline-block px-1.5 py-0.2 rounded-full text-[10px] bg-amber-950/15 text-amber-950 font-black">
               v1.7.0
             </span>
           </button>
 
+          {/* Tutorial Button */}
           <button
             onClick={onOpenTutorial}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20 hover:bg-amber-100 dark:hover:bg-amber-500/20 transition"
+            className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20 hover:bg-amber-100 dark:hover:bg-amber-500/20 transition"
           >
             <BookOpen className="w-3.5 h-3.5" />
-            <span>下载/上传指南</span>
+            <span>使用指南</span>
           </button>
 
+          {/* Demo Button (only if no data loaded) */}
           {!hasData && (
             <button
-              onClick={onLoadDemo}
-              className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-semibold text-slate-950 bg-amber-400 hover:bg-amber-300 transition shadow-sm shadow-amber-400/20 active:scale-95"
+              onClick={() => {
+                onLoadDemo();
+                onChangeView('workbench');
+              }}
+              className="hidden lg:flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold text-slate-950 bg-amber-400 hover:bg-amber-300 transition shadow-sm shadow-amber-400/20 active:scale-95"
             >
               <Sparkles className="w-3.5 h-3.5" />
-              <span>载入演示数据 (Demo)</span>
+              <span>载入演示数据</span>
             </button>
           )}
         </div>
