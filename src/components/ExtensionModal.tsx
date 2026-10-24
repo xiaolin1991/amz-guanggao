@@ -25,6 +25,7 @@ import {
   Info,
   Package
 } from 'lucide-react';
+import { trackDownload } from '../utils/analytics';
 
 interface ExtensionModalProps {
   isOpen: boolean;
@@ -55,6 +56,9 @@ export const ExtensionModal: React.FC<ExtensionModalProps> = ({ isOpen, onClose 
   };
 
   const handleDirectDownload = (type: 'zip' | 'crx') => {
+    // Record download analytics
+    trackDownload(type === 'zip' ? 'ZIP' : 'CRX', `通过安装弹窗下载 (${activeBrowser})`);
+
     const fileName = type === 'zip' ? 'xiaolin-ad-assistant.zip' : 'xiaolin-ad-assistant.crx';
     const filePath = `./app/${fileName}`;
     

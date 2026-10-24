@@ -28,6 +28,8 @@ import { MetricsDashboard } from './components/MetricsDashboard';
 import { ActionTabs } from './components/ActionTabs';
 import { ExportBar } from './components/ExportBar';
 import { FloatingSupport } from './components/FloatingSupport';
+import { AdminAnalytics } from './components/AdminAnalytics';
+import { trackVisit } from './utils/analytics';
 import { SlidersHorizontal } from 'lucide-react';
 
 export const App: React.FC = () => {
@@ -51,6 +53,37 @@ export const App: React.FC = () => {
 
   // Active View State: 'home' for rich modern presentation homepage, 'workbench' for ad table analysis workspace
   const [currentView, setCurrentView] = useState<'home' | 'workbench'>('home');
+
+  // Secret Admin Analytics Route Check (/xiaolin1991)
+  const [isAdminRoute, setIsAdminRoute] = useState<boolean>(() => {
+    const p = window.location.pathname.toLowerCase();
+    const h = window.location.hash.toLowerCase();
+    const s = window.location.search.toLowerCase();
+    return p.includes('xiaolin1991') || h.includes('xiaolin1991') || s.includes('xiaolin1991');
+  });
+
+  useEffect(() => {
+    const handleUrlChange = () => {
+      const p = window.location.pathname.toLowerCase();
+      const h = window.location.hash.toLowerCase();
+      const s = window.location.search.toLowerCase();
+      setIsAdminRoute(p.includes('xiaolin1991') || h.includes('xiaolin1991') || s.includes('xiaolin1991'));
+    };
+
+    window.addEventListener('popstate', handleUrlChange);
+    window.addEventListener('hashchange', handleUrlChange);
+    return () => {
+      window.removeEventListener('popstate', handleUrlChange);
+      window.removeEventListener('hashchange', handleUrlChange);
+    };
+  }, []);
+
+  // Track page visits automatically
+  useEffect(() => {
+    if (!isAdminRoute) {
+      trackVisit(currentView === 'home' ? '官网主页' : '广告调价工作台');
+    }
+  }, [currentView, isAdminRoute]);
 
   // History records list
   const [historyRecords, setHistoryRecords] = useState<HistoryRecord[]>([]);
@@ -374,6 +407,21 @@ export const App: React.FC = () => {
   const handleExportReview = () => {
     exportAuditReviewFile(bidActions, negativeActions, harvestActions);
   };
+
+  // If user navigates to secret admin route (/xiaolin1991), render dedicated Admin Analytics Dashboard
+  if (isAdminRoute) {
+    return (
+      <AdminAnalytics
+        onBackToSite={() => {
+          window.location.hash = '';
+          if (window.location.pathname.toLowerCase().includes('xiaolin1991')) {
+            window.history.pushState({}, '', '/');
+          }
+          setIsAdminRoute(false);
+        }}
+      />
+    );
+  }
 
   return (
     <div className="min-h-screen flex flex-col bg-slate-100 dark:bg-slate-950 text-slate-800 dark:text-slate-100 pb-28 transition-colors">
