@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <title>晓林广告助手</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="popup-container">
+    <!-- 头部品牌区 -->
+    <header class="header">
+      <img src="../assets/logo.png" alt="晓林广告助手 LOGO" class="logo-img">
+      <div class="header-text">
+        <h1 class="app-title">晓林广告助手</h1>
+        <p class="app-tagline">专为亚马逊卖家研发 · 智能止血与精准转化</p>
+      </div>
+    </header>
+
+    <!-- 助手总开关卡片 (快捷开启/暂停提醒) -->
+    <div class="master-switch-card" id="masterSwitchCard">
+      <div class="switch-info">
+        <div class="switch-title-row">
+          <span class="status-dot active" id="popupStatusDot">●</span>
+          <span class="switch-main-title" id="popupStatusText">助手提醒状态：🟢 运行中</span>
+        </div>
+        <div class="switch-sub-title">无需卸载插件，点击右侧即可随时临时暂停页面提醒</div>
+      </div>
+      <button type="button" class="btn-master-toggle active" id="btnPopupMasterToggle">
+        已开启
+      </button>
+    </div>
+
+    <!-- 导航切换卡 -->
+    <nav class="nav-tabs">
+      <button class="tab-btn active" data-tab="tab-params">
+        <span class="icon">📊</span> 调价与外观
+      </button>
+      <button class="tab-btn" data-tab="tab-ai">
+        <span class="icon">🤖</span> AI 智能配置
+      </button>
+      <button class="tab-btn highlight-tab" data-tab="tab-support">
+        <span class="icon">👨‍💻</span> 技术支持
+      </button>
+    </nav>
+
+    <!-- 主体内容卡片区 -->
+    <main class="content-body">
+      <!-- 选项卡 1: 核心参数与诊断阈值 -->
+      <section id="tab-params" class="tab-pane active">
+        <!-- 外观主题选择卡片 (默认浅色明亮) -->
+        <div class="theme-switch-card">
+          <label class="switch-title">界面外观主题：</label>
+          <div class="switch-buttons">
+            <button type="button" class="btn-switch active" id="btnThemeLight">☀️ 浅色明亮 (默认)</button>
+            <button type="button" class="btn-switch" id="btnThemeDark">🌙 深色极客</button>
+          </div>
+        </div>
+
+        <!-- 核心指标偏好切换 -->
+        <div class="metric-switch-card">
+          <label class="switch-title">核心监控指标偏好：</label>
+          <div class="switch-buttons">
+            <button type="button" class="btn-switch active" id="btnModeAcos">ACoS 模式</button>
+            <button type="button" class="btn-switch" id="btnModeRoas">ROAS 模式</button>
+          </div>
+        </div>
+
+        <!-- 调价策略偏好切换 (平滑调价 vs 保本倒推) -->
+        <div class="theme-switch-card">
+          <label class="switch-title">调价建议算法：</label>
+          <div class="switch-buttons">
+            <button type="button" class="btn-switch active" id="btnStrategySmooth">平滑降价 (推荐)</button>
+            <button type="button" class="btn-switch" id="btnStrategyBreakeven">保本倒推</button>
+          </div>
+        </div>
+
+        <!-- 执行建议提示方式 (1.5s气泡 vs 静默模式) -->
+        <div class="theme-switch-card">
+          <label class="switch-title">执行建议提示方式：</label>
+          <div class="switch-buttons">
+            <button type="button" class="btn-switch active" id="btnPromptToast">浮动气泡 (1.5秒)</button>
+            <button type="button" class="btn-switch" id="btnPromptSilent">🔕 静默填入</button>
+          </div>
+        </div>
+
+        <div class="section-title">🛑 广告止血与诊断阈值</div>
+        
+        <div class="form-group">
+          <label for="maxSpendZeroOrder">
+            高花费0转化报警线 ($)
+            <span class="tip" title="搜索词/投放词花费超过此数值且出单为0时，在后台立即亮红灯报警">?</span>
+          </label>
+          <div class="input-wrapper">
+            <span class="unit">$</span>
+            <input type="number" id="maxSpendZeroOrder" step="1" min="1" value="15">
+          </div>
+        </div>
+
+        <!-- ACoS 模式下显示 -->
+        <div class="form-group" id="groupAcosAlert">
+          <label for="highAcosThreshold">
+            ACoS 严重偏高红线 (%)
+            <span class="tip" title="超过此 ACoS (如 jade roller 144%) 判定为严重吃利润，建议降价">?</span>
+          </label>
+          <div class="input-wrapper">
+            <input type="number" id="highAcosThreshold" step="1" min="1" value="55">
+            <span class="unit">%</span>
+          </div>
+        </div>
+
+        <!-- ROAS 模式下显示 -->
+        <div class="form-group" id="groupRoasAlert" style="display:none;">
+          <label for="lowRoasThreshold">
+            ROAS 极低亏损警戒线
+            <span class="tip" title="低于此 ROAS 判定为严重亏损，立即亮红灯警示">?</span>
+          </label>
+          <div class="input-wrapper">
+            <input type="number" id="lowRoasThreshold" step="0.1" min="0.1" value="1.8">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="harvestMinOrders">
+            黄金词收割门槛 (单量)
+            <span class="tip" title="出单达到此数量且表现健康，提醒一键转正至精准组">?</span>
+          </label>
+          <div class="input-wrapper">
+            <input type="number" id="harvestMinOrders" step="1" min="1" value="2">
+            <span class="unit">单</span>
+          </div>
+        </div>
+
+        <div class="form-row" id="groupStepPercents">
+          <div class="form-group half">
+            <label for="stepDownPercent">
+              阶梯降价幅度 (%)
+              <span class="tip" title="高ACoS词每次调价下调比例，默认下调10%保住曝光">?</span>
+            </label>
+            <div class="input-wrapper">
+              <input type="number" id="stepDownPercent" step="1" min="1" max="50" value="10">
+              <span class="unit">%</span>
+            </div>
+          </div>
+          <div class="form-group half">
+            <label for="stepUpPercent">
+              黄金词提价幅度 (%)
+              <span class="tip" title="优质盈利词适度加价抢首位曝光比例，默认微调提价10%">?</span>
+            </label>
+            <div class="input-wrapper">
+              <input type="number" id="stepUpPercent" step="1" min="1" max="50" value="10">
+              <span class="unit">%</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-row" id="groupBoostPercents">
+          <div class="form-group half">
+            <label for="boostMaxImpressions">
+              低曝光激活门槛 (次)
+              <span class="tip" title="展示量低于此数值的关键词或自动广告投放，提醒批量提价">?</span>
+            </label>
+            <div class="input-wrapper">
+              <input type="number" id="boostMaxImpressions" step="1" min="0" max="1000" value="5">
+              <span class="unit">次</span>
+            </div>
+          </div>
+          <div class="form-group half">
+            <label for="boostPercent">
+              低曝光提价幅度 (%)
+              <span class="tip" title="低曝光词批量提价激活比例，默认上调10%">?</span>
+            </label>
+            <div class="input-wrapper">
+              <input type="number" id="boostPercent" step="1" min="1" max="100" value="10">
+              <span class="unit">%</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="section-title" style="margin-top:14px;">🎯 科学保本竞价测算模型</div>
+        
+        <div class="form-row">
+          <div class="form-group half">
+            <label for="productPrice">平均客单价 ($)</label>
+            <div class="input-wrapper">
+              <span class="unit">$</span>
+              <input type="number" id="productPrice" step="0.1" value="29.99">
+            </div>
+          </div>
+          <div class="form-group half">
+            <label for="profitMargin">毛利率 (%)</label>
+            <div class="input-wrapper">
+              <input type="number" id="profitMargin" step="1" value="40">
+              <span class="unit">%</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group half">
+            <label for="targetAcos">目标 ACoS (%)</label>
+            <div class="input-wrapper">
+              <input type="number" id="targetAcos" step="1" value="30">
+              <span class="unit">%</span>
+            </div>
+          </div>
+          <div class="form-group half">
+            <label for="cvrEstimate">预估转化率 CVR (%)</label>
+            <div class="input-wrapper">
+              <input type="number" id="cvrEstimate" step="0.5" value="10">
+              <span class="unit">%</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="calc-result-box">
+          <div class="result-label">科学推荐上限出价 (Max CPC):</div>
+          <div class="result-val" id="calcMaxCpcDisplay">$0.90</div>
+          <div class="result-formula">公式：客单价 × 目标ACoS × 转化率 (对应保本 ROAS: <span id="displayTargetRoas">3.33</span>)</div>
+        </div>
+      </section>
+
+      <!-- 选项卡 2: AI 大模型配置 -->
+      <section id="tab-ai" class="tab-pane">
+        <div class="section-title">🧠 大模型选词与卖点挖掘配置</div>
+        <p class="section-desc">配置 API Key 后，插件悬浮窗可直接通过 AI 提炼精准长尾词与避坑否定词。</p>
+
+        <div class="form-group">
+          <label for="aiApiKey">API 密钥 (API Key)</label>
+          <input type="password" id="aiApiKey" placeholder="sk-xxxxxxxxxxxxxxxxxxxxxxxx">
+          <span class="sub-text">支持 DeepSeek、OpenAI、月之暗面等标准兼容格式</span>
+        </div>
+
+        <div class="form-group">
+          <label for="aiApiUrl">API 接口端点 (Endpoint)</label>
+          <input type="text" id="aiApiUrl" value="https://api.deepseek.com/v1/chat/completions">
+        </div>
+
+        <div class="form-group">
+          <label for="aiModel">模型代号 (Model)</label>
+          <input type="text" id="aiModel" value="deepseek-chat">
+        </div>
+
+        <div class="ai-tip-card">
+          <div class="tip-header">💡 为什么推荐 DeepSeek？</div>
+          <p>DeepSeek-V3 语义理解极强，挖掘亚马逊买家意向非常精准，且每次调用成本低于 0.005 元人民币，极其实惠！</p>
+        </div>
+      </section>
+
+      <!-- 选项卡 3: 技术支持与售后（定制专属页面） -->
+      <section id="tab-support" class="tab-pane">
+        <div class="support-card">
+          <div class="support-badge">官方技术支持</div>
+          <h2 class="support-name">曹晓林</h2>
+          
+          <div class="phone-box">
+            <span class="phone-icon">📞</span>
+            <span class="phone-num" id="phoneNum">13575948278</span>
+            <button class="btn-copy" id="btnCopyPhone" title="点击复制电话">复制</button>
+          </div>
+
+          <p class="support-desc">在使用过程中如遇任何问题、亚马逊页面改版、定制新功能或广告优化疑问，欢迎随时联系交流！</p>
+
+          <div class="qr-grid">
+            <div class="qr-item">
+              <div class="qr-img-wrap">
+                <img src="../assets/wechat_qr.jpg" alt="微信二维码" class="qr-img">
+              </div>
+              <div class="qr-label">
+                <span class="chat-icon wechat">💬</span> 微信扫码咨询
+              </div>
+            </div>
+
+            <div class="qr-item">
+              <div class="qr-img-wrap">
+                <img src="../assets/qq_qr.jpg" alt="QQ 二维码" class="qr-img">
+              </div>
+              <div class="qr-label">
+                <span class="chat-icon qq">🐧</span> QQ 扫码联系
+              </div>
+            </div>
+          </div>
+
+          <div class="version-info">
+            软件版本：v1.3.0 | 持续升级维护中
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- 底部保存按钮 -->
+    <footer class="footer">
+      <button id="btnSaveSettings" class="btn-primary">
+        <span>💾</span> 保存并同步到亚马逊后台
+      </button>
+      <div id="saveToast" class="save-toast">已成功保存设置！</div>
+    </footer>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

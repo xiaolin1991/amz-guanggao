@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <title>【晓林广告助手】真实实战模拟测试沙盒 - 亚马逊广告控制台 (v1.2.0)</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; }
+    body { background: #eaeded; color: #111827; padding: 20px; }
+    .mock-header { background: #131921; color: #fff; padding: 12px 20px; display: flex; align-items: center; justify-content: space-between; border-radius: 8px; margin-bottom: 16px; }
+    .mock-header h1 { font-size: 16px; color: #f59e0b; display: flex; align-items: center; gap: 8px; }
+    .mock-header .env-tag { font-size: 11px; background: #374151; padding: 3px 8px; border-radius: 4px; color: #9ca3af; }
+    
+    .test-instruction-card { background: #eff6ff; border: 1px solid #bfdbfe; border-left: 4px solid #3b82f6; border-radius: 6px; padding: 14px 18px; margin-bottom: 16px; font-size: 13px; line-height: 1.6; color: #1e3a8a; }
+    .test-instruction-card b { color: #1d4ed8; }
+
+    /* 模拟真实亚马逊控制台表格卡片 */
+    .console-card { background: #fff; border-radius: 8px; border: 1px solid #d5d9d9; box-shadow: 0 1px 3px rgba(0,0,0,0.05); padding: 16px; margin-bottom: 24px; overflow-x: auto; }
+    .card-title { font-size: 14px; font-weight: 700; color: #1f2937; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; }
+
+    /* 模拟日历弹层触发器 */
+    .calendar-demo-bar { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+    .btn-toggle-calendar { background: #f0f2f2; border: 1px solid #d5d9d9; border-radius: 6px; padding: 6px 12px; font-size: 12px; font-weight: 600; cursor: pointer; }
+    
+    /* 模拟日历组件容器 (测试日历防误伤) */
+    .mock-date-picker-dialog { display: inline-block; background: #fff; border: 1px solid #a6c8e0; border-radius: 8px; padding: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); margin-bottom: 16px; }
+    .calendar-title { font-size: 12px; font-weight: 700; color: #111; margin-bottom: 8px; }
+    .calendar-table { border-collapse: collapse; text-align: center; font-size: 12px; }
+    .calendar-table th { padding: 4px 8px; color: #555; background: #f9f9f9; }
+    .calendar-table td { padding: 6px 10px; border: 1px solid #eee; cursor: pointer; }
+    .calendar-table td:hover { background: #e3f2fd; }
+
+    /* 真实亚马逊广告表格样式 */
+    .amz-ads-table { width: 100%; border-collapse: collapse; font-size: 12px; min-width: 1100px; }
+    .amz-ads-table th { background: #f7fafa; color: #565959; font-weight: 700; text-align: left; padding: 10px 8px; border-bottom: 2px solid #eaeded; white-space: nowrap; }
+    .amz-ads-table td { padding: 10px 8px; border-bottom: 1px solid #eaeded; color: #0f1111; white-space: nowrap; vertical-align: middle; }
+    .amz-ads-table tr:hover td { background: #fbfbfc; }
+
+    .kw-name { font-weight: 700; color: #007185; }
+    .kw-sub { font-size: 11px; color: #6b7280; display: block; margin-top: 2px; }
+
+    /* 模拟前台竞品卡片 */
+    .search-results-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; }
+    .product-card { background: #fff; border: 1px solid #e5e7eb; border-radius: 8px; padding: 14px; display: flex; flex-direction: column; gap: 8px; }
+    .product-card h2 { font-size: 13px; line-height: 1.4; color: #007185; }
+    .product-card .price { font-size: 16px; font-weight: 800; color: #b12704; }
+    .product-card .rating-row { font-size: 12px; color: #de7921; display: flex; align-items: center; gap: 4px; }
+  </style>
+</head>
+<body>
+
+  <!-- 模拟亚马逊顶部条 -->
+  <header class="mock-header">
+    <h1><span>📈</span> Amazon Ads Agent (亚马逊广告管理器 · v1.2.0 实战测试沙盒)</h1>
+    <div class="env-tag">真实中文后台结构 · 完美复刻 jade roller (144.05%) 场景</div>
+  </header>
+
+  <!-- 测试指引 -->
+  <div class="test-instruction-card">
+    <b>🎯 v1.2.0 优化升级验证（原竞价对比 + 单独/批量修改竞价 + 灵活金额/比例微调 + 低曝光提价激活）：</b><br>
+    1. <b>原竞价 vs 建议降价（支持自定义修改 + 单独/批量应用）</b>：在【🛑 降价止损】标签页，每个卡片清晰展示“原竞价: $1.14 ➔ 建议降至: [$1.03]”（默认降10%），卖家可直接在输入框修改价格！点击右侧 <code>[应用修改]</code> 或顶部 <code>[⚡ 一键批量修改全部建议降价]</code>，表格竞价列立即填入并呈现绿色高亮！<br>
+    2. <b>低曝光与自动广告提价激活（全新 Tab 2）</b>：切换到【💤 曝光激活】标签页，自动筛选展示量低于 5 次（可自定义门槛）及自动广告投放，展示原竞价 ➔ 推荐提价 +10%（支持自定义修改输入框）！支持单独 <code>[应用提价]</code> 或顶部 <code>[⚡ 一键批量提高全部竞价]</code>！<br>
+    3. <b>极简自定义调价控制（已彻底移除繁琐的快捷药丸，支持自由升降与自定义金额/比例）</b>：默认 ACoS 爆表词降低 10%，低曝光词默认提价 10%。支持自由切换【% 比例】与【$ 金额】，自由切换【降低 ⬇】与【升高 ⬆】，输入任意数值点击【重新计算】即可批量刷新！<br>
+    4. <b>全球后台自适应抓取与 React 兼容</b>：已适配亚马逊现代 React 表格、跨站点多币种 ($ / € / £ / ￥) 及各种列顺序，即刻准备就绪实战！
+  </div>
+
+  <!-- 模拟时间筛选器与日历弹层 (用于验证日历防误伤) -->
+  <div class="calendar-demo-bar">
+    <span style="font-size:12px;font-weight:bold;color:#333;">📅 模拟时间筛选弹窗 (验证日历不会被贴标签)：</span>
+  </div>
+  <div class="mock-date-picker-dialog" role="dialog" aria-modal="true" class="date-picker-popover">
+    <div class="calendar-title">九月 2026 (模拟日历组件)</div>
+    <table class="calendar-table">
+      <thead>
+        <tr><th>一</th><th>二</th><th>三</th><th>四</th><th>五</th><th>六</th><th>日</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>1</td><td>2</td><td>3</td><td>4</td><td>5</td><td>6</td><td>7</td></tr>
+        <tr><td>8</td><td>9</td><td>10</td><td>11</td><td>12</td><td>13</td><td>14</td></tr>
+        <tr><td>15</td><td>16</td><td>17</td><td>18</td><td>19</td><td>20</td><td>21</td></tr>
+        <tr><td>22</td><td>23</td><td>24</td><td>25</td><td>26</td><td>27</td><td>28</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- 模拟真实亚马逊广告后台表格 (复刻截图中的列与真实数据) -->
+  <section class="console-card">
+    <div class="card-title">
+      <span>📊 广告活动: 01 WINE 脸部滚轮手动 - 投放关键词列表</span>
+      <span style="font-size:11px;color:#565959;">视图: 标准 · 0条规则已生效</span>
+    </div>
+
+    <table class="amz-ads-table">
+      <thead>
+        <tr>
+          <th style="width:30px;"><input type="checkbox"></th>
+          <th>进行中</th>
+          <th style="min-width:240px;">关键词</th>
+          <th>投放匹配类型</th>
+          <th>状态</th>
+          <th>建议竞价</th>
+          <th>竞价</th>
+          <th>展示量</th>
+          <th>搜索结果首位</th>
+          <th>点击量</th>
+          <th>总成本</th>
+          <th>CPC</th>
+          <th>购买量</th>
+          <th>销售额</th>
+          <th>ACOS</th>
+          <th>ROAS</th>
+        </tr>
+      </thead>
+      <tbody>
+        <!-- 案例 1：真实截图中的 jade roller (ACOS 144.05% 严重爆表词) -->
+        <tr>
+          <td><input type="checkbox"></td>
+          <td><input type="checkbox" checked></td>
+          <td>
+            <span class="kw-name">jade roller</span>
+            <span class="kw-sub">玉石脸部按摩滚轮 ⓘ</span>
+          </td>
+          <td>短语</td>
+          <td><span style="color:#c45500;">超出预算... ⓘ</span></td>
+          <td>US$1.02</td>
+          <td>US$1.14</td>
+          <td>9,163</td>
+          <td>&lt;5%</td>
+          <td>29</td>
+          <td>US$34.57</td>
+          <td>US$1.19</td>
+          <td>2</td>
+          <td>US$23.86</td>
+          <td>144.05%</td>
+          <td>0.69</td>
+        </tr>
+
+        <!-- 案例 2：真实截图中的 jade roller 精准 (花费 $11.86，0单，吃预算词) -->
+        <tr>
+          <td><input type="checkbox"></td>
+          <td><input type="checkbox" checked></td>
+          <td>
+            <span class="kw-name">jade roller</span>
+            <span class="kw-sub">玉石脸部按摩滚轮 ⓘ</span>
+          </td>
+          <td>精准</td>
+          <td><span style="color:#c45500;">超出预算... ⓘ</span></td>
+          <td>US$0.95</td>
+          <td>US$1.14</td>
+          <td>4,181</td>
+          <td>&lt;5%</td>
+          <td>13</td>
+          <td>US$11.86</td>
+          <td>US$0.91</td>
+          <td>-</td>
+          <td>-</td>
+          <td>-</td>
+          <td>-</td>
+        </tr>
+
+        <!-- 案例 3：真实截图中的 face roller (ACOS 190.81% 严重爆表词) -->
+        <tr>
+          <td><input type="checkbox"></td>
+          <td><input type="checkbox" checked></td>
+          <td>
+            <span class="kw-name">face roller</span>
+            <span class="kw-sub">面部按摩滚轮 ⓘ</span>
+          </td>
+          <td>短语</td>
+          <td><span style="color:#c45500;">超出预算... ⓘ</span></td>
+          <td>US$1.17</td>
+          <td>US$1.13</td>
+          <td>4,502</td>
+          <td>&lt;5%</td>
+          <td>13</td>
+          <td>US$16.20</td>
+          <td>US$1.25</td>
+          <td>1</td>
+          <td>US$8.49</td>
+          <td>190.81%</td>
+          <td>0.52</td>
+        </tr>
+
+        <!-- 案例 4：真实截图中的 jaw massager (出单且 ACOS 31.45% 正常健康词) -->
+        <tr>
+          <td><input type="checkbox"></td>
+          <td><input type="checkbox" checked></td>
+          <td>
+            <span class="kw-name">jaw massager</span>
+            <span class="kw-sub">下颌按摩器 ⓘ</span>
+          </td>
+          <td>广泛</td>
+          <td><span style="color:#c45500;">超出预算... ⓘ</span></td>
+          <td>US$1.51</td>
+          <td>US$1.08</td>
+          <td>565</td>
+          <td>&lt;5%</td>
+          <td>2</td>
+          <td>US$2.67</td>
+          <td>US$1.34</td>
+          <td>1</td>
+          <td>US$8.49</td>
+          <td>31.45%</td>
+          <td>3.18</td>
+        </tr>
+
+        <!-- 案例 5：高花费 0 转化典型吃预算词 (花费 $22.80，0单) -->
+        <tr>
+          <td><input type="checkbox"></td>
+          <td><input type="checkbox" checked></td>
+          <td>
+            <span class="kw-name">cheap face roller bulk</span>
+            <span class="kw-sub">廉价脸部滚轮批发 ⓘ</span>
+          </td>
+          <td>广泛</td>
+          <td>进行中</td>
+          <td>US$0.80</td>
+          <td>US$0.95</td>
+          <td>6,200</td>
+          <td>&lt;5%</td>
+          <td>24</td>
+          <td>US$22.80</td>
+          <td>US$0.95</td>
+          <td>0</td>
+          <td>US$0.00</td>
+          <td>-</td>
+          <td>-</td>
+        </tr>
+
+        <!-- 案例 6：展示量极低词 (展示仅 2 次，属于低曝光激活词) -->
+        <tr>
+          <td><input type="checkbox"></td>
+          <td><input type="checkbox" checked></td>
+          <td>
+            <span class="kw-name">face roller set</span>
+            <span class="kw-sub">面部按摩滚轮套装 ⓘ</span>
+          </td>
+          <td>精准</td>
+          <td><span style="color:#c45500;">超出预算... ⓘ</span></td>
+          <td>US$0.84</td>
+          <td>US$1.20</td>
+          <td>2</td>
+          <td>&lt;5%</td>
+          <td>1</td>
+          <td>US$1.53</td>
+          <td>US$1.53</td>
+          <td>0</td>
+          <td>US$0.00</td>
+          <td>-</td>
+          <td>-</td>
+        </tr>
+
+        <!-- 案例 7：展示量极低词 (展示仅 1 次，属于低曝光激活词) -->
+        <tr>
+          <td><input type="checkbox"></td>
+          <td><input type="checkbox" checked></td>
+          <td>
+            <span class="kw-name">face stone</span>
+            <span class="kw-sub">面部按摩石 ⓘ</span>
+          </td>
+          <td>广泛</td>
+          <td><span style="color:#c45500;">超出预算... ⓘ</span></td>
+          <td>US$1.51</td>
+          <td>US$0.63</td>
+          <td>1</td>
+          <td>&lt;5%</td>
+          <td>1</td>
+          <td>US$0.72</td>
+          <td>US$0.72</td>
+          <td>0</td>
+          <td>US$0.00</td>
+          <td>-</td>
+          <td>-</td>
+        </tr>
+
+        <!-- 案例 8：真实截图中的 face roller (展现量 570次，点击 1，花费 $1.01，验证绝不误判为曝光不足) -->
+        <tr>
+          <td><input type="checkbox"></td>
+          <td><input type="checkbox" checked></td>
+          <td>
+            <span class="kw-name">face roller</span>
+            <span class="kw-sub">面部按摩滚轮 ⓘ</span>
+          </td>
+          <td>短语</td>
+          <td>进行中</td>
+          <td>US$1.17 (US$0.97-US$1.46)</td>
+          <td>US$1.13</td>
+          <td>570</td>
+          <td>-</td>
+          <td>1</td>
+          <td>US$1.01</td>
+          <td>US$1.01</td>
+          <td>0</td>
+          <td>US$0.00</td>
+          <td>-</td>
+          <td>-</td>
+        </tr>
+
+        <!-- 案例 9：真实截图图二中的 facial face roller (展现量 77次，原生输入框竞价 1.06，状态“不完整”，验证不误抓1.35/1.0，不误判曝光不足) -->
+        <tr>
+          <td><input type="checkbox"></td>
+          <td><input type="checkbox" checked></td>
+          <td>
+            <div>facial face roller</div>
+            <div style="font-size:11px;color:#6b7280;">面部按摩滚轮 <span title="翻译仅供参考">ⓘ</span></div>
+          </td>
+          <td>广泛</td>
+          <td><span title="不完整">不完整 ⓘ</span></td>
+          <td>US$1.14 (US$0.86-US$1.42) <button type="button" style="font-size:11px;padding:1px 6px;">应用</button></td>
+          <td><span>US$</span><input type="text" value="1.06" style="width:58px;padding:2px 4px;border:1px solid #cbd5e1;border-radius:4px;font-weight:bold;"></td>
+          <td>77</td>
+          <td>&lt;5%</td>
+          <td>1</td>
+          <td>US$1.35</td>
+          <td>US$1.35</td>
+          <td>0</td>
+          <td>US$0.00</td>
+          <td>-</td>
+          <td>-</td>
+        </tr>
+
+        <!-- 案例 9B：真实截图图三底部的 0 曝光词 face massager roller (展示量为 —，原生输入框竞价 1.14，验证 0 曝光词正常识别激活) -->
+        <tr>
+          <td><input type="checkbox"></td>
+          <td><input type="checkbox" checked></td>
+          <td>
+            <div>face massager roller</div>
+            <div style="font-size:11px;color:#6b7280;">脸部按摩滚轮 <span title="翻译仅供参考">ⓘ</span></div>
+          </td>
+          <td>精准</td>
+          <td>进行中</td>
+          <td>US$1.06 (US$0.75-US$1.38) <button type="button" style="font-size:11px;padding:1px 6px;">应用</button></td>
+          <td><span>US$</span><input type="text" value="1.14" style="width:58px;padding:2px 4px;border:1px solid #cbd5e1;border-radius:4px;font-weight:bold;"></td>
+          <td>—</td>
+          <td>—</td>
+          <td>—</td>
+          <td>—</td>
+          <td>—</td>
+          <td>—</td>
+          <td>—</td>
+          <td>—</td>
+          <td>—</td>
+        </tr>
+
+        <!-- 案例 10：自动广告投放 (自动 - 紧密匹配，展示仅 3 次，低曝光激活) -->
+        <tr>
+          <td><input type="checkbox"></td>
+          <td><input type="checkbox" checked></td>
+          <td>
+            <span class="kw-name">auto - close match 紧密匹配</span>
+            <span class="kw-sub">自动投放 - 紧密匹配 ⓘ</span>
+          </td>
+          <td>广泛</td>
+          <td>进行中</td>
+          <td>US$0.65</td>
+          <td>US$0.75</td>
+          <td>3</td>
+          <td>&lt;5%</td>
+          <td>0</td>
+          <td>US$0.00</td>
+          <td>US$0.00</td>
+          <td>0</td>
+          <td>US$0.00</td>
+          <td>-</td>
+          <td>-</td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- 模拟亚马逊后台广告活动管理列表 (对应图一：验证广告活动层级告警微型化固定在第1列名称下方 + 排除总计行) -->
+  <section class="console-card">
+    <div class="card-title">
+      <span>📢 模拟亚马逊后台：广告活动管理列表 (图一验证沙盒)</span>
+      <span style="font-size:11px;color:#6b7280;">验证：告警徽章严格固定在第 1 列名称下方、尺寸微型小巧、总计行 0 误报</span>
+    </div>
+
+    <table class="amz-ads-table" id="campaigns-table">
+      <thead>
+        <tr>
+          <th style="width: 32px;"><input type="checkbox"></th>
+          <th>广告活动名称 ↑ ⓘ</th>
+          <th>状态 ⓘ</th>
+          <th>类型 ⓘ</th>
+          <th>广告活动预算金额 ⓘ</th>
+          <th>广告活动竞价... ⓘ</th>
+          <th>展示量 ⓘ</th>
+          <th>搜索结果首页首位竞价调整</th>
+          <th>点击量 ⓘ</th>
+          <th>总成本 ⓘ</th>
+          <th>销售额 ⓘ</th>
+          <th>ACOS ⓘ</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><input type="checkbox" checked></td>
+          <td>
+            <a href="#" class="kw-name" style="font-weight:700;color:#007185;text-decoration:none;">01 WINE 脸部滚轮手动 - 9/16/2026</a>
+            <span class="kw-sub" style="font-size:11px;color:#6b7280;">A081757312KEOG6MD8YXB</span>
+          </td>
+          <td><span style="color:#067d62;">进行中 ⓘ</span></td>
+          <td>商品推广<br><span style="color:#6b7280;">手动投放</span></td>
+          <td>US$10.00 · 每天</td>
+          <td>动态竞价...</td>
+          <td>2,879</td>
+          <td>25%</td>
+          <td>8</td>
+          <td>US$25.25</td>
+          <td>US$1.00</td>
+          <td>2525.0%</td>
+        </tr>
+        <tr>
+          <td><input type="checkbox" checked></td>
+          <td>
+            <a href="#" class="kw-name" style="font-weight:700;color:#007185;text-decoration:none;">02 VINE测评滚轮 - 9/16/2026</a>
+            <span class="kw-sub" style="font-size:11px;color:#6b7280;">A0548441VPIOFP4SICZN</span>
+          </td>
+          <td><span style="color:#067d62;">进行中 ⓘ</span></td>
+          <td>商品推广<br><span style="color:#6b7280;">自动投放</span></td>
+          <td>US$10.00 · 每天</td>
+          <td>动态竞价...</td>
+          <td>1,515</td>
+          <td>20%</td>
+          <td>3</td>
+          <td>US$20.20</td>
+          <td>US$1.00</td>
+          <td>2020.0%</td>
+        </tr>
+      </tbody>
+      <tfoot>
+        <tr style="background:#f7fafa;font-weight:bold;">
+          <td></td>
+          <td>总计：6</td>
+          <td>-</td>
+          <td>-</td>
+          <td>US$60.00 · 每天</td>
+          <td>-</td>
+          <td>7,887</td>
+          <td>-</td>
+          <td>37</td>
+          <td>US$788.75</td>
+          <td>US$0.10</td>
+          <td>788750.5%</td>
+        </tr>
+      </tfoot>
+    </table>
+  </section>
+
+  <!-- 模拟亚马逊前台竞品搜索结果 (测试弱势竞品 ASIN 狙击) -->
+  <section class="console-card">
+    <div class="card-title">
+      <span>🎯 模拟亚马逊前台买家搜索页 (用于验证弱势 ASIN 狙击)</span>
+      <span style="font-size:11px;color:#6b7280;">搜索词: "jade roller"</span>
+    </div>
+
+    <div class="search-results-grid">
+      <!-- 弱势竞品 1: 评分低 3.4星 -->
+      <div class="product-card" data-asin="B08XYZ1234">
+        <h2><span>Weak Brand Jade Roller & Gua Sha (评分仅 3.4星，极易截流)</span></h2>
+        <div class="rating-row">
+          <span class="a-icon-alt">3.4 out of 5 stars (颗星)</span>
+          <span style="color:#6b7280;">(128条评价)</span>
+        </div>
+        <div class="price"><span class="a-price-whole">28</span>.<span class="a-price-fraction">99</span></div>
+      </div>
+
+      <!-- 弱势竞品 2: 售价过高 $49.99 -->
+      <div class="product-card" data-asin="B09ABC5678">
+        <h2><span>Premium Real Stone Face Roller (标价 US$49.99 偏高)</span></h2>
+        <div class="rating-row">
+          <span class="a-icon-alt">4.2 out of 5 stars (颗星)</span>
+          <span style="color:#6b7280;">(310条评价)</span>
+        </div>
+        <div class="price"><span class="a-price-whole">49</span>.<span class="a-price-fraction">99</span></div>
+      </div>
+
+      <!-- 强势竞品: 4.8星 $19.99 (插件不应标注) -->
+      <div class="product-card" data-asin="B07DEF9012">
+        <h2><span>Top Rated Face Roller Brand (4.8星头部卖家，避开不打)</span></h2>
+        <div class="rating-row">
+          <span class="a-icon-alt">4.8 out of 5 stars (颗星)</span>
+          <span style="color:#6b7280;">(15,200条评价)</span>
+        </div>
+        <div class="price"><span class="a-price-whole">19</span>.<span class="a-price-fraction">99</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 引入插件核心脚本与样式 -->
+  <link rel="stylesheet" href="content/content.css">
+  <script>
+    if (typeof window.chrome === 'undefined') window.chrome = {};
+    if (!window.chrome.storage) {
+      Object.assign(window.chrome, {
+        storage: {
+          local: {
+            get: function(keys, cb) {
+              cb({
+                adSettings: {
+                  isEnabled: true,
+                  theme: 'light',
+                  metricMode: 'acos',
+                  bidStrategy: 'smooth',
+                  silentMode: false,
+                  stepDownMode: 'percent',
+                  stepDownDir: 'down',
+                  stepDownPercent: 10,
+                  stepDownAmount: 0.02,
+                  stepUpPercent: 10,
+                  boostMaxImpressions: 5,
+                  boostMode: 'percent',
+                  boostDir: 'up',
+                  boostPercent: 10,
+                  boostAmount: 0.02,
+                  targetAcos: 30,
+                  highAcosThreshold: 55,
+                  lowRoasThreshold: 1.82,
+                  maxSpendZeroOrder: 15,
+                  harvestMinOrders: 2,
+                  productPrice: 29.99,
+                  profitMargin: 40,
+                  cvrEstimate: 10
+                }
+              });
+            },
+            set: function(obj, cb) { if (cb) cb(); }
+          }
+        },
+        runtime: {
+          getURL: function(path) { return path; },
+          onMessage: { addListener: function() {} },
+          sendMessage: function(req, cb) {
+            if (req.action === 'fetchAmazonSuggestions') {
+              const kw = req.keyword || '';
+              cb({
+                success: true,
+                suggestions: [
+                  kw + " and gua sha set",
+                  kw + " for face slimming",
+                  kw + " real jade certified",
+                  kw + " with ice roller",
+                  kw + " skin care tools"
+                ]
+              });
+            }
+          }
+        }
+      });
+    }
+  </script>
+  <script src="content/analyzer.js"></script>
+  <script src="content/autosuggest.js"></script>
+  <script src="content/asin_sniper.js"></script>
+  <script src="content/content.js"></script>
+</body>
+</html>
